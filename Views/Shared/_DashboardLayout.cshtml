@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - SWP Dashboard</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="bg-dark">
+    <div class="dashboard-wrapper">
+        <aside class="sidebar">
+            <a href="/" class="sidebar-brand">
+                <span class="text-gradient"><i class="fas fa-bolt"></i> SWP Tracker</span>
+            </a>
+
+            <ul class="sidebar-nav">
+                <li class="nav-item">
+                    <a href="/Dashboard" class="nav-link-custom active">
+                        <i class="fas fa-th-large"></i> Tổng quan
+                    </a>
+                </li>
+                @if (User.IsInRole("Admin"))
+                {
+                    <li class="nav-item">
+                        <a href="/Dashboard/Groups" class="nav-link-custom">
+                            <i class="fas fa-users"></i> Quản lý nhóm
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/Dashboard/Lecturers" class="nav-link-custom">
+                            <i class="fas fa-user-tie"></i> Giảng viên
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/Dashboard/Commits" class="nav-link-custom">
+                            <i class="fas fa-code-branch"></i> Commits
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/Dashboard/Sync" class="nav-link-custom">
+                            <i class="fas fa-sync"></i> Đồng bộ Jira
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/Dashboard/SRS" class="nav-link-custom">
+                            <i class="fas fa-file-signature"></i> Tạo SRS
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/Dashboard/Settings" class="nav-link-custom">
+                            <i class="fas fa-cog"></i> Cài đặt
+                        </a>
+                    </li>
+                }
+                @if (User.IsInRole("Lecturer"))
+                {
+                    <li class="nav-item">
+                        <a href="/Dashboard/Requirements" class="nav-link-custom">
+                            <i class="fas fa-file-alt"></i> Requirements
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/Dashboard/Groups" class="nav-link-custom">
+                            <i class="fas fa-users"></i> Danh sách nhóm
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/Dashboard/Reports" class="nav-link-custom">
+                            <i class="fas fa-chart-bar"></i> Báo cáo
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/Dashboard/Commits" class="nav-link-custom">
+                            <i class="fas fa-code-branch"></i> Commits
+                        </a>
+                    </li>
+                }
+                @if (User.IsInRole("TeamLeader"))
+                {
+                    <li class="nav-item">
+                        <a href="/Dashboard/Tasks" class="nav-link-custom">
+                            <i class="fas fa-list-ul"></i> Công việc
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/Dashboard/Sync" class="nav-link-custom">
+                            <i class="fas fa-sync"></i> Đồng bộ Jira
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/Dashboard/SRS" class="nav-link-custom">
+                            <i class="fas fa-file-signature"></i> Tạo SRS
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/Dashboard/Commits" class="nav-link-custom">
+                            <i class="fas fa-code-branch"></i> Commits
+                        </a>
+                    </li>
+                }
+                @if (User.IsInRole("TeamMember"))
+                {
+                    <li class="nav-item">
+                        <a href="/Dashboard/MyTasks" class="nav-link-custom">
+                            <i class="fas fa-tasks"></i> Công việc của tôi
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/Dashboard/Commits" class="nav-link-custom">
+                            <i class="fas fa-code-branch"></i> Commits
+                        </a>
+                    </li>
+                }
+            </ul>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar"></div>
+                    <div>
+                        <div class="font-bold" style="font-size: 0.875rem; color: white;">@User.Identity?.Name</div>
+                        <div class="text-muted" style="font-size: 0.75rem;">
+                            @(User.IsInRole("Admin") ? "Quản trị viên" : 
+                              User.IsInRole("Lecturer") ? "Giảng viên" : 
+                              User.IsInRole("TeamLeader") ? "Team Leader" : "Thành viên")
+                        </div>
+                    </div>
+                </div>
+                <form action="/logout" method="post" class="mt-3">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="nav-link-custom w-full border-0 bg-transparent text-red-400">
+                        <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                    </button>
+                </form>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            @RenderBody()
+        </main>
+    </div>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

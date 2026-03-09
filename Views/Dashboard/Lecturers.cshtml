@@ -1,0 +1,142 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Quản lý giảng viên";
+}
+
+<div class="page-header animate__animated animate__fadeIn">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 class="page-title">Danh sách giảng viên</h1>
+            <p class="text-muted">Quản lý tài khoản giảng viên trong hệ thống.</p>
+        </div>
+        <button type="button" class="btn-add" onclick="openCreateModal()">
+            <i class="fas fa-plus"></i> Thêm giảng viên
+        </button>
+    </div>
+</div>
+
+<div class="content-card animate__animated animate__fadeInUp">
+    <div class="overflow-x-auto">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Họ tên / Username</th>
+                    <th>Email</th>
+                    <th>Vai trò</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody id="lecturersTableBody">
+                <tr>
+                    <td colspan="4" class="text-center" style="padding: 2.5rem;">Đang tải dữ liệu...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Thêm Giảng viên -->
+<div id="lecturerModal" class="crud-modal-overlay" onclick="if(event.target === this) closeModal()">
+    <div class="crud-modal-box" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 class="modal-title">Thêm giảng viên mới</h2>
+            <button type="button" class="modal-close" onclick="closeModal()" aria-label="Đóng">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="lecturerForm" onsubmit="createLecturer(event)">
+            <div class="form-input-group">
+                <label class="form-label">Email (@@fpt.edu.vn)</label>
+                <input type="email" id="lecturerEmail" class="form-control" placeholder="name@fpt.edu.vn" required>
+            </div>
+            <div class="form-input-group">
+                <label class="form-label">Username (tên hiển thị)</label>
+                <input type="text" id="lecturerUserName" class="form-control" placeholder="Nguyễn Văn A">
+            </div>
+            <div class="form-input-group">
+                <label class="form-label">Mật khẩu ban đầu</label>
+                <input type="password" id="lecturerPassword" class="form-control" required minlength="6">
+            </div>
+            <div class="crud-modal-actions">
+                <button type="button" class="btn btn-cancel" onclick="closeModal()">Hủy</button>
+                <button type="submit" class="btn btn-submit">Tạo tài khoản</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const lecturerModal = document.getElementById('lecturerModal');
+    function setModalOpen(open) {
+        lecturerModal.classList.toggle('is-open', open);
+    }
+    async function loadLecturers() {
+        try {
+            const res = await fetch('/api/admin/lecturers', { credentials: 'include' });
+            const data = await res.json();
+            const tbody = document.getElementById('lecturersTableBody');
+            tbody.innerHTML = data.map(l => `
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(139, 92, 246, 0.2); color: #a78bfa; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem;">
+                                ${(l.userName || 'L').charAt(0).toUpperCase()}
+                            </div>
+                            <span style="font-weight: 500;">${escapeHtml(l.userName || 'Chưa đặt tên')}</span>
+                        </div>
+                    </td>
+                    <td style="color: var(--text-muted);">${escapeHtml(l.email)}</td>
+                    <td><span class="badge badge-muted">Giảng viên</span></td>
+                    <td class="action-cell">
+                        <button type="button" class="action-btn action-delete" onclick="deleteLecturer('${l.id}')" title="Xóa"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (err) {
+            console.error(err);
+            document.getElementById('lecturersTableBody').innerHTML = '<tr><td colspan="4" class="text-center" style="padding: 2rem; color: #f87171;">Lỗi tải dữ liệu.</td></tr>';
+        }
+    }
+    function escapeHtml(s) {
+        const div = document.createElement('div');
+        div.textContent = s;
+        return div.innerHTML;
+    }
+    function openCreateModal() {
+        document.getElementById('lecturerForm').reset();
+        setModalOpen(true);
+    }
+    function closeModal() {
+        setModalOpen(false);
+    }
+    async function createLecturer(e) {
+        e.preventDefault();
+        const data = {
+            email: document.getElementById('lecturerEmail').value.trim(),
+            userName: document.getElementById('lecturerUserName').value.trim() || null,
+            password: document.getElementById('lecturerPassword').value,
+            role: 'Lecturer'
+        };
+        const res = await fetch('/api/admin/lecturers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+            credentials: 'include'
+        });
+        if (res.ok) {
+            closeModal();
+            loadLecturers();
+        } else {
+            const err = await res.json().catch(() => ({}));
+            alert('Lỗi: ' + (err.message || (Array.isArray(err) ? err.map(x => x.description).join(', ') : 'Không thể tạo tài khoản.')));
+        }
+    }
+    async function deleteLecturer(id) {
+        if (!confirm('Bạn có chắc chắn muốn xóa giảng viên này?')) return;
+        const res = await fetch('/api/admin/lecturers/' + id, { method: 'DELETE', credentials: 'include' });
+        if (res.ok) loadLecturers();
+        else alert('Không xóa được.');
+    }
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+    window.onload = loadLecturers;
+</script>

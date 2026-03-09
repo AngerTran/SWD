@@ -1,0 +1,88 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Requirements & Tasks";
+}
+
+<div class="page-header animate__animated animate__fadeIn">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="page-title">Yêu cầu & Công việc</h1>
+            <p class="text-muted">Danh sách các yêu cầu hệ thống và trạng thái thực hiện.</p>
+        </div>
+        <div class="flex gap-3">
+            <select id="groupFilter" class="form-control" onchange="loadTasks()">
+                <option value="">Tất cả các nhóm</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<div class="content-card animate__animated animate__fadeInUp">
+    <div class="overflow-x-auto">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Tiêu đề / Requirement</th>
+                    <th>Jira Key</th>
+                    <th>Nhóm</th>
+                    <th>Trạng thái</th>
+                    <th>Cập nhật</th>
+                </tr>
+            </thead>
+            <tbody id="tasksTableBody">
+                <tr>
+                    <td colspan="5" class="text-center py-10">Vui lòng chọn nhóm hoặc đang tải...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    async function loadGroups() {
+        const res = await fetch('/api/groups', { credentials: 'include' });
+        const groups = await res.json();
+        const select = document.getElementById('groupFilter');
+        select.innerHTML += groups.map(g => `<option value="${g.id}">${g.code} - ${g.name}</option>`).join('');
+    }
+
+    async function loadTasks() {
+        const groupId = document.getElementById('groupFilter').value;
+        const url = groupId ? `/api/tasks?groupId=${groupId}` : '/api/tasks';
+        
+        try {
+            const res = await fetch(url, { credentials: 'include' });
+            const tasks = await res.json();
+            const tbody = document.getElementById('tasksTableBody');
+            
+            if (tasks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-10 text-slate-500">Chưa có công việc nào.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = tasks.map(t => `
+                <tr>
+                    <td>
+                        <div class="font-medium">${t.title}</div>
+                        <div class="text-xs text-slate-500 line-clamp-1">${t.description || 'Không có mô tả'}</div>
+                    </td>
+                    <td><span class="text-blue-400 font-mono">${t.jiraIssueKey || 'N/A'}</span></td>
+                    <td><span class="text-xs">${t.groupId ? 'Nhóm ' + t.groupId.substring(0,8) : 'N/A'}</span></td>
+                    <td>
+                        <span class="status-badge ${t.status === 2 ? 'status-done' : t.status === 1 ? 'status-progress' : 'status-todo'}">
+                            ${t.status === 2 ? 'Hoàn thành' : t.status === 1 ? 'Đang làm' : 'Chưa làm'}
+                        </span>
+                    </td>
+                    <td class="text-xs text-slate-500">${new Date(t.updatedAt).toLocaleDateString()}</td>
+                </tr>
+            `).join('');
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    window.onload = async () => {
+        await loadGroups();
+        loadTasks();
+    };
+</script>

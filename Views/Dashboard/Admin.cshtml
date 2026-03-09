@@ -1,0 +1,98 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Quản trị viên";
+}
+
+<div class="page-header animate__animated animate__fadeIn">
+    <h1 class="page-title">Tổng quan hệ thống</h1>
+    <p class="text-muted">Chào mừng trở lại, @User.Identity?.Name</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card animate__animated animate__zoomIn" style="animation-delay: 0.1s">
+        <div class="stat-icon bg-blue-500/10 text-blue-500">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-value">12</div>
+        <div class="stat-label">Tổng số nhóm</div>
+    </div>
+    <div class="stat-card animate__animated animate__zoomIn" style="animation-delay: 0.2s">
+        <div class="stat-icon bg-purple-500/10 text-purple-500">
+            <i class="fas fa-user-tie"></i>
+        </div>
+        <div class="stat-value">8</div>
+        <div class="stat-label">Giảng viên</div>
+    </div>
+    <div class="stat-card animate__animated animate__zoomIn" style="animation-delay: 0.3s">
+        <div class="stat-icon bg-green-500/10 text-green-500">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stat-value">98%</div>
+        <div class="stat-label">Hệ thống ổn định</div>
+    </div>
+    <div class="stat-card animate__animated animate__zoomIn" style="animation-delay: 0.4s">
+        <div class="stat-icon bg-yellow-500/10 text-yellow-500">
+            <i class="fas fa-sync"></i>
+        </div>
+        <div class="stat-value">24</div>
+        <div class="stat-label">Syncs hôm nay</div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="content-card animate__animated animate__fadeInUp" style="animation-delay: 0.5s">
+        <div class="card-header">
+            <h2 class="card-title">Danh sách nhóm mới nhất</h2>
+            <a href="/Dashboard/Groups" class="text-blue-500 text-sm">Xem tất cả</a>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Mã nhóm</th>
+                    <th>Tên nhóm</th>
+                    <th>GitHub Repo</th>
+                    <th>Jira Key</th>
+                    <th>Thành viên</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>G01</td>
+                    <td>Smart Home System</td>
+                    <td><span class="text-muted">smarthome/web-app</span></td>
+                    <td>SHS</td>
+                    <td>5</td>
+                </tr>
+                <tr>
+                    <td>G02</td>
+                    <td>E-Learning App</td>
+                    <td><span class="text-muted">elearning/mobile</span></td>
+                    <td>ELRN</td>
+                    <td>6</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="content-card animate__animated animate__fadeInUp" style="animation-delay: 0.6s">
+        <div class="card-header">
+            <h2 class="card-title">Hoạt động gần đây</h2>
+        </div>
+        <div class="flex flex-column gap-4">
+            <div class="flex gap-3">
+                <div class="w-2 h-2 rounded-full bg-blue-500 mt-1.5"></div>
+                <div>
+                    <div class="text-sm font-bold">Admin đã thêm giảng viên mới</div>
+                    <div class="text-xs text-muted">2 giờ trước</div>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <div class="w-2 h-2 rounded-full bg-purple-500 mt-1.5"></div>
+                <div>
+                    <div class="text-sm font-bold">Cập nhật Jira Key cho Group G03</div>
+                    <div class="text-xs text-muted">5 giờ trước</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

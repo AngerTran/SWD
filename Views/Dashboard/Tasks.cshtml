@@ -1,0 +1,184 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Quản lý công việc Team Leader";
+}
+
+<div class="page-header animate__animated animate__fadeIn">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 class="page-title">Quản lý công việc nhóm</h1>
+            <p class="text-muted">Đồng bộ từ Jira và phân công cho thành viên.</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem;">
+            <button type="button" class="btn btn-cancel" style="flex: none;" onclick="syncJira()">
+                <i class="fas fa-sync" style="margin-right: 0.5rem;"></i> Đồng bộ Jira
+            </button>
+            <button type="button" class="btn-add" onclick="openCreateModal()">
+                <i class="fas fa-plus"></i> Thêm thủ công
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="stats-grid" style="margin-bottom: 2rem;">
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-blue"><i class="fas fa-tasks"></i></div>
+        <div id="statTotal" class="stat-value">0</div>
+        <div class="stat-label">Tổng số tasks</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-green"><i class="fas fa-check"></i></div>
+        <div id="statDone" class="stat-value">0</div>
+        <div class="stat-label">Đã hoàn thành</div>
+    </div>
+</div>
+
+<div class="content-card animate__animated animate__fadeInUp">
+    <div class="overflow-x-auto">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Tiêu đề</th>
+                    <th>Người thực hiện</th>
+                    <th>Jira Key</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody id="tasksTableBody">
+                <tr><td colspan="5" class="text-center" style="padding: 2.5rem;">Đang tải...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Thêm/Sửa Task -->
+<div id="taskModal" class="crud-modal-overlay" onclick="if(event.target === this) closeModal()">
+    <div class="crud-modal-box" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 class="modal-title">Phân công công việc</h2>
+            <button type="button" class="modal-close" onclick="closeModal()" aria-label="Đóng">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="taskForm" onsubmit="saveTask(event)">
+            <div class="form-input-group">
+                <label class="form-label">Tiêu đề công việc</label>
+                <input type="text" id="taskTitle" class="form-control" required>
+            </div>
+            <div class="form-input-group">
+                <label class="form-label">Mô tả</label>
+                <textarea id="taskDesc" class="form-control" rows="3" placeholder="Mô tả ngắn (tùy chọn)"></textarea>
+            </div>
+            <div class="form-input-group">
+                <label class="form-label">Người thực hiện</label>
+                <select id="assigneeId" class="form-control" required>
+                    <option value="">-- Chọn thành viên trong nhóm --</option>
+                </select>
+            </div>
+            <div class="crud-modal-actions">
+                <button type="button" class="btn btn-cancel" onclick="closeModal()">Hủy</button>
+                <button type="submit" class="btn btn-submit">Lưu phân công</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let currentGroupId = null;
+    const taskModal = document.getElementById('taskModal');
+    function setModalOpen(open) {
+        taskModal.classList.toggle('is-open', open);
+    }
+    async function loadData() {
+        try {
+            const gRes = await fetch('/api/groups', { credentials: 'include' });
+            const groups = await gRes.json();
+            if (groups.length > 0) currentGroupId = groups[0].id;
+            if (!currentGroupId) {
+                document.getElementById('tasksTableBody').innerHTML = '<tr><td colspan="5" class="text-center" style="padding: 2rem;">Chưa có nhóm. Vui lòng tạo nhóm trước.</td></tr>';
+                return;
+            }
+            const sRes = await fetch('/api/reports/progress?groupId=' + currentGroupId, { credentials: 'include' });
+            const stats = await sRes.json();
+            document.getElementById('statTotal').textContent = stats.total;
+            document.getElementById('statDone').textContent = stats.done;
+            const tRes = await fetch('/api/tasks?groupId=' + currentGroupId, { credentials: 'include' });
+            const tasks = await tRes.json();
+            const tbody = document.getElementById('tasksTableBody');
+            tbody.innerHTML = tasks.map(t => `
+                <tr>
+                    <td><span style="font-weight: 500;">${escapeHtml(t.title)}</span></td>
+                    <td style="font-size: 0.8125rem; color: var(--text-muted);">${(t.assigneeUserId || '').toString().substring(0, 8)}...</td>
+                    <td><span style="color: #60a5fa; font-family: monospace;">${escapeHtml(t.jiraIssueKey || 'Manual')}</span></td>
+                    <td>
+                        <span class="status-badge ${t.status === 2 ? 'status-done' : t.status === 1 ? 'status-progress' : 'status-todo'}">
+                            ${t.status === 2 ? 'Done' : t.status === 1 ? 'Working' : 'Todo'}
+                        </span>
+                    </td>
+                    <td class="action-cell">
+                        <button type="button" class="action-btn" title="Phân công"><i class="fas fa-user-plus"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (err) {
+            console.error(err);
+            document.getElementById('tasksTableBody').innerHTML = '<tr><td colspan="5" class="text-center" style="padding: 2rem; color: #f87171;">Lỗi tải dữ liệu.</td></tr>';
+        }
+    }
+    function escapeHtml(s) {
+        const div = document.createElement('div');
+        div.textContent = s || '';
+        return div.innerHTML;
+    }
+    async function syncJira() {
+        if (!currentGroupId) return alert('Không tìm thấy ID nhóm.');
+        const res = await fetch('/api/jira/sync?groupId=' + currentGroupId, { method: 'POST', credentials: 'include' });
+        if (res.ok) {
+            var d = await res.json();
+            alert('Đồng bộ xong. Thêm: ' + (d.added || 0) + ', Cập nhật: ' + (d.updated || 0));
+            loadData();
+        } else {
+            alert('Đồng bộ thất bại.');
+        }
+    }
+    async function openCreateModal() {
+        document.getElementById('taskForm').reset();
+        const sel = document.getElementById('assigneeId');
+        sel.innerHTML = '<option value="">Đang tải...</option>';
+        setModalOpen(true);
+        if (!currentGroupId) { sel.innerHTML = '<option value="">Chưa có nhóm</option>'; return; }
+        const res = await fetch('/api/groups/' + currentGroupId + '/members', { credentials: 'include' });
+        const members = await res.json();
+        sel.innerHTML = '<option value="">-- Chọn thành viên --</option>' + members.map(m => `<option value="${m.id}">${escapeHtml(m.userName || m.email)} (${escapeHtml(m.email)})</option>`).join('');
+    }
+    function closeModal() {
+        setModalOpen(false);
+    }
+    async function saveTask(e) {
+        e.preventDefault();
+        const assigneeId = document.getElementById('assigneeId').value.trim();
+        if (!assigneeId) return alert('Vui lòng nhập User ID người thực hiện.');
+        const data = {
+            title: document.getElementById('taskTitle').value.trim(),
+            description: document.getElementById('taskDesc').value.trim() || null,
+            assigneeUserId: assigneeId,
+            groupId: currentGroupId
+        };
+        const res = await fetch('/api/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+            credentials: 'include'
+        });
+        if (res.ok) {
+            closeModal();
+            loadData();
+        } else {
+            const err = await res.json().catch(() => ({}));
+            alert('Lỗi: ' + (err.title || err.message || 'Không lưu được.'));
+        }
+    }
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
+    window.onload = loadData;
+</script>

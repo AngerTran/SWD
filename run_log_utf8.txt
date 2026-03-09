@@ -1,0 +1,213 @@
+﻿Using launch settings from D:\Netcore\SWD\SWD\Properties\launchSettings.json...
+Building...
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (56ms) [Parameters=[@__normalizedName_0='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[ConcurrencyStamp], [a].[Name], [a].[NormalizedName]
+      FROM [AspNetRoles] AS [a]
+      WHERE [a].[NormalizedName] = @__normalizedName_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (2ms) [Parameters=[@__normalizedName_0='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[ConcurrencyStamp], [a].[Name], [a].[NormalizedName]
+      FROM [AspNetRoles] AS [a]
+      WHERE [a].[NormalizedName] = @__normalizedName_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__normalizedName_0='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[ConcurrencyStamp], [a].[Name], [a].[NormalizedName]
+      FROM [AspNetRoles] AS [a]
+      WHERE [a].[NormalizedName] = @__normalizedName_0
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (1ms) [Parameters=[@__normalizedName_0='?' (Size = 256)], CommandType='Text', CommandTimeout='30']
+      SELECT TOP(1) [a].[Id], [a].[ConcurrencyStamp], [a].[Name], [a].[NormalizedName]
+      FROM [AspNetRoles] AS [a]
+      WHERE [a].[NormalizedName] = @__normalizedName_0
+fail: Microsoft.Extensions.Hosting.Internal.Host[11]
+      Hosting failed to start
+      System.IO.IOException: Failed to bind to address http://127.0.0.1:5287: address already in use.
+       ---> Microsoft.AspNetCore.Connections.AddressInUseException: Only one usage of each socket address (protocol/network address/port) is normally permitted.
+       ---> System.Net.Sockets.SocketException (10048): Only one usage of each socket address (protocol/network address/port) is normally permitted.
+         at System.Net.Sockets.Socket.UpdateStatusAfterSocketErrorAndThrowException(SocketError error, Boolean disconnectOnFailure, String callerName)
+         at System.Net.Sockets.Socket.DoBind(EndPoint endPointSnapshot, SocketAddress socketAddress)
+         at System.Net.Sockets.Socket.Bind(EndPoint localEP)
+         at Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.SocketTransportOptions.CreateDefaultBoundListenSocket(EndPoint endpoint)
+         at Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.SocketConnectionListener.Bind()
+         --- End of inner exception stack trace ---
+         at Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.SocketConnectionListener.Bind()
+         at Microsoft.AspNetCore.Server.Kestrel.Transport.Sockets.SocketTransportFactory.BindAsync(EndPoint endpoint, CancellationToken cancellationToken)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Infrastructure.TransportManager.BindAsync(EndPoint endPoint, ConnectionDelegate connectionDelegate, EndpointConfig endpointConfig, CancellationToken cancellationToken)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerImpl.<>c__DisplayClass28_0`1.<<StartAsync>g__OnBind|0>d.MoveNext()
+      --- End of stack trace from previous location ---
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.AddressBinder.BindEndpointAsync(ListenOptions endpoint, AddressBindContext context, CancellationToken cancellationToken)
+         --- End of inner exception stack trace ---
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.AddressBinder.BindEndpointAsync(ListenOptions endpoint, AddressBindContext context, CancellationToken cancellationToken)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.LocalhostListenOptions.BindAsync(AddressBindContext context, CancellationToken cancellationToken)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.Internal.AddressBinder.AddressesStrategy.BindAsync(AddressBindContext context, CancellationToken cancellationToken)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerImpl.BindAsync(CancellationToken cancellationToken)
+         at Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerImpl.StartAsync[TContext](IHttpApplication`1 application, CancellationToken cancellationToken)
+         at Microsoft.AspNetCore.Hosting.GenericWebHostService.StartAsync(CancellationToken cancellationToken)
+         at Microsoft.Extensions.Hosting.Internal.Host.<StartAsync>b__14_1(IHostedService service, CancellationToken token)
+         at Microsoft.Extensions.Hosting.Internal.Host.ForeachService[T](IEnumerable`1 services, CancellationToken token, Boolean concurrent, Boolean abortOnFirstException, List`1 exceptions, Func`3 operation)
+dotnet : Unhandled 
+exception. 
+System.IO.IOException: 
+Failed to bind to address 
+http://127.0.0.1:5287: 
+address already in use.
+At line:1 char:1
++ dotnet run > run_log.txt 
+2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~
+    + CategoryInfo          
+    : NotSpecified: (Unhan  
+  dled excep...already in   
+  use.:String) [], Remot    
+eException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+ ---> Microsoft.AspNetCore.C
+onnections.AddressInUseExcep
+tion: Only one usage of 
+each socket address 
+(protocol/network 
+address/port) is normally 
+permitted.
+ ---> System.Net.Sockets.Soc
+ketException (10048): Only 
+one usage of each socket 
+address (protocol/network 
+address/port) is normally 
+permitted.
+   at System.Net.Sockets.Soc
+ket.UpdateStatusAfterSocketE
+rrorAndThrowException(Socket
+Error error, Boolean 
+disconnectOnFailure, String 
+callerName)
+   at System.Net.Sockets.Soc
+ket.DoBind(EndPoint 
+endPointSnapshot, 
+SocketAddress socketAddress)
+   at System.Net.Sockets.Soc
+ket.Bind(EndPoint localEP)
+   at Microsoft.AspNetCore.S
+erver.Kestrel.Transport.Sock
+ets.SocketTransportOptions.C
+reateDefaultBoundListenSocke
+t(EndPoint endpoint)
+   at Microsoft.AspNetCore.S
+erver.Kestrel.Transport.Sock
+ets.SocketConnectionListener
+.Bind()
+   --- End of inner 
+exception stack trace ---
+   at Microsoft.AspNetCore.S
+erver.Kestrel.Transport.Sock
+ets.SocketConnectionListener
+.Bind()
+   at Microsoft.AspNetCore.S
+erver.Kestrel.Transport.Sock
+ets.SocketTransportFactory.B
+indAsync(EndPoint endpoint, 
+CancellationToken 
+cancellationToken)
+   at Microsoft.AspNetCore.S
+erver.Kestrel.Core.Internal.
+Infrastructure.TransportMana
+ger.BindAsync(EndPoint 
+endPoint, 
+ConnectionDelegate 
+connectionDelegate, 
+EndpointConfig 
+endpointConfig, 
+CancellationToken 
+cancellationToken)
+   at Microsoft.AspNetCore.S
+erver.Kestrel.Core.KestrelSe
+rverImpl.<>c__DisplayClass28
+_0`1.<<StartAsync>g__OnBind|
+0>d.MoveNext()
+--- End of stack trace from 
+previous location ---
+   at Microsoft.AspNetCore.S
+erver.Kestrel.Core.Internal.
+AddressBinder.BindEndpointAs
+ync(ListenOptions endpoint, 
+AddressBindContext context, 
+CancellationToken 
+cancellationToken)
+   --- End of inner 
+exception stack trace ---
+   at Microsoft.AspNetCore.S
+erver.Kestrel.Core.Internal.
+AddressBinder.BindEndpointAs
+ync(ListenOptions endpoint, 
+AddressBindContext context, 
+CancellationToken 
+cancellationToken)
+   at Microsoft.AspNetCore.S
+erver.Kestrel.Core.Localhost
+ListenOptions.BindAsync(Addr
+essBindContext context, 
+CancellationToken 
+cancellationToken)
+   at Microsoft.AspNetCore.S
+erver.Kestrel.Core.Internal.
+AddressBinder.AddressesStrat
+egy.BindAsync(AddressBindCon
+text context, 
+CancellationToken 
+cancellationToken)
+   at Microsoft.AspNetCore.S
+erver.Kestrel.Core.KestrelSe
+rverImpl.BindAsync(Cancellat
+ionToken cancellationToken)
+   at Microsoft.AspNetCore.S
+erver.Kestrel.Core.KestrelSe
+rverImpl.StartAsync[TContext
+](IHttpApplication`1 
+application, 
+CancellationToken 
+cancellationToken)
+   at Microsoft.AspNetCore.H
+osting.GenericWebHostService
+.StartAsync(CancellationToke
+n cancellationToken)
+   at Microsoft.Extensions.H
+osting.Internal.Host.<StartA
+sync>b__14_1(IHostedService 
+service, CancellationToken 
+token)
+   at Microsoft.Extensions.H
+osting.Internal.Host.Foreach
+Service[T](IEnumerable`1 
+services, CancellationToken 
+token, Boolean concurrent, 
+Boolean 
+abortOnFirstException, 
+List`1 exceptions, Func`3 
+operation)
+   at Microsoft.Extensions.H
+osting.Internal.Host.StartAs
+ync(CancellationToken 
+cancellationToken)
+   at Microsoft.Extensions.H
+osting.HostingAbstractionsHo
+stExtensions.RunAsync(IHost 
+host, CancellationToken 
+token)
+   at Microsoft.Extensions.H
+osting.HostingAbstractionsHo
+stExtensions.RunAsync(IHost 
+host, CancellationToken 
+token)
+   at Microsoft.Extensions.H
+osting.HostingAbstractionsHo
+stExtensions.Run(IHost host)
+   at 
+Program.<Main>$(String[] 
+args) in D:\Netcore\SWD\SWD\
+Program.cs:line 101
+   at 
+Program.<Main>(String[] 
+args)

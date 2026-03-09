@@ -1,0 +1,102 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Tạo SRS";
+}
+
+<div class="page-header animate__animated animate__fadeIn">
+    <h1 class="page-title">Tạo SRS</h1>
+    <p class="text-muted">Tạo tài liệu SRS từ dữ liệu các bảng: <strong>Groups</strong> (thông tin nhóm), <strong>Tasks</strong> (công việc), <strong>Users</strong> (người thực hiện). Chọn nhóm và bấm tạo.</p>
+</div>
+
+<div class="content-card animate__animated animate__fadeInUp" style="max-width: 560px;">
+    <div class="form-input-group">
+        <label class="form-label">Chọn nhóm (bảng Groups)</label>
+        <select id="groupSelect" class="form-control">
+            <option value="">-- Đang tải --</option>
+        </select>
+    </div>
+    <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem;">
+        <button type="button" id="btnCreate" class="btn btn-submit" onclick="createSrs()">
+            <i class="fas fa-file-signature" style="margin-right: 0.5rem;"></i> Tạo SRS
+        </button>
+    </div>
+</div>
+
+<div id="resultCard" class="content-card animate__animated animate__fadeInUp" style="margin-top: 1.5rem; display: none;">
+    <h2 class="card-title" style="margin-bottom: 0.75rem;">SRS đã tạo</h2>
+    <div id="resultBody"></div>
+    <div style="margin-top: 1rem;">
+        <a id="downloadLink" href="#" target="_blank" rel="noopener" class="btn btn-cancel" style="display: inline-flex; align-items: center;">
+            <i class="fas fa-download" style="margin-right: 0.5rem;"></i> Tải xuống (.txt)
+        </a>
+    </div>
+</div>
+
+<div id="errorCard" class="content-card" style="margin-top: 1rem; border-color: rgba(239,68,68,0.5); display: none;">
+    <p id="errorText" class="text-muted" style="margin: 0; color: #f87171;"></p>
+</div>
+
+<script>
+(function() {
+    const opts = { credentials: 'include' };
+    let groups = [];
+
+    async function loadGroups() {
+        const sel = document.getElementById('groupSelect');
+        try {
+            const res = await fetch('/api/groups', opts);
+            groups = await res.json();
+            sel.innerHTML = '<option value="">-- Chọn nhóm --</option>' +
+                groups.map(g => `<option value="${g.id}">${escapeHtml(g.code)} - ${escapeHtml(g.name)}</option>`).join('');
+            if (groups.length === 1) sel.value = groups[0].id;
+        } catch (e) {
+            sel.innerHTML = '<option value="">Lỗi tải nhóm</option>';
+        }
+    }
+
+    function escapeHtml(s) {
+        const d = document.createElement('div');
+        d.textContent = s || '';
+        return d.innerHTML;
+    }
+
+    async function createSrs() {
+        const groupId = document.getElementById('groupSelect').value;
+        if (!groupId) {
+            alert('Vui lòng chọn nhóm.');
+            return;
+        }
+        const btn = document.getElementById('btnCreate');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 0.5rem;"></i> Đang tạo...';
+        document.getElementById('resultCard').style.display = 'none';
+        document.getElementById('errorCard').style.display = 'none';
+
+        try {
+            const res = await fetch('/api/reports/srs?groupId=' + groupId, { method: 'POST', credentials: 'include' });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.id) {
+                document.getElementById('resultBody').innerHTML =
+                    '<p><strong>Tiêu đề:</strong> ' + escapeHtml(data.title || 'SRS') + '</p>' +
+                    '<p><strong>Thời gian tạo:</strong> ' + (data.createdAt ? new Date(data.createdAt).toLocaleString('vi-VN') : '') + '</p>' +
+                    '<p class="text-muted" style="margin-top: 0.5rem; font-size: 0.875rem;">Nội dung SRS lấy từ bảng Groups, Tasks và Users.</p>';
+                const base = window.location.origin;
+                const link = document.getElementById('downloadLink');
+                link.href = base + '/api/reports/' + data.id + '?download=true';
+                link.style.display = 'inline-flex';
+                document.getElementById('resultCard').style.display = 'block';
+            } else {
+                document.getElementById('errorText').textContent = data.title || data.message || data.detail || 'Tạo SRS thất bại.';
+                document.getElementById('errorCard').style.display = 'block';
+            }
+        } catch (err) {
+            document.getElementById('errorText').textContent = 'Lỗi kết nối: ' + err.message;
+            document.getElementById('errorCard').style.display = 'block';
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-file-signature" style="margin-right: 0.5rem;"></i> Tạo SRS';
+    }
+
+    window.onload = loadGroups;
+})();
+</script>

@@ -1,0 +1,223 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Quản lý nhóm";
+    var isAdmin = ViewBag.IsAdmin as bool? ?? false;
+    var isLecturer = ViewBag.IsLecturer as bool? ?? false;
+    var isTeamLeader = ViewBag.IsTeamLeader as bool? ?? false;
+}
+
+<div class="page-header animate__animated animate__fadeIn">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 class="page-title">@(isAdmin ? "Quản lý nhóm dự án" : "Danh sách nhóm")</h1>
+            <p class="text-muted">
+                @if (isAdmin) {
+                    <text>Thêm, sửa, xóa và cấu hình tích hợp. Mã nhóm không được trùng.</text>
+                } else if (isLecturer) {
+                    <text>Xem nhóm được gán và thêm thành viên vào nhóm.</text>
+                } else {
+                    <text>Xem danh sách nhóm của bạn.</text>
+                }
+            </p>
+        </div>
+        @if (isAdmin)
+        {
+            <button type="button" class="btn-add" onclick="openCreateModal()">
+                <i class="fas fa-plus"></i> Thêm nhóm mới
+            </button>
+        }
+    </div>
+</div>
+
+<div class="content-card animate__animated animate__fadeInUp">
+    <div class="overflow-x-auto">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Mã nhóm</th>
+                    <th>Tên dự án</th>
+                    <th>Jira Key</th>
+                    <th>GitHub Repo</th>
+                    @if (isLecturer || isAdmin)
+                    {
+                        <th>Thành viên</th>
+                    }
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody id="groupsTableBody">
+                <tr><td colspan="@(isLecturer || isAdmin ? 6 : 5)" class="text-center" style="padding: 2.5rem;">Đang tải...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Thêm/Sửa Nhóm (chỉ Admin) -->
+@if (isAdmin)
+{
+<div id="groupModal" class="crud-modal-overlay" onclick="if(event.target === this) closeModal()">
+    <div class="crud-modal-box" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 id="modalTitle" class="modal-title">Thêm nhóm dự án</h2>
+            <button type="button" class="modal-close" onclick="closeModal()" aria-label="Đóng"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="groupForm" onsubmit="saveGroup(event)">
+            <input type="hidden" id="groupId">
+            <div class="form-input-group">
+                <label class="form-label">Mã nhóm (không trùng, VD: G06)</label>
+                <input type="text" id="groupCode" class="form-control" required maxlength="32" placeholder="VD: G06">
+            </div>
+            <div class="form-input-group">
+                <label class="form-label">Tên dự án</label>
+                <input type="text" id="groupName" class="form-control" required>
+            </div>
+            <div class="form-input-group">
+                <label class="form-label">Jira Project Key (tùy chọn)</label>
+                <input type="text" id="jiraKey" class="form-control" placeholder="VD: SWD">
+            </div>
+            <div class="form-input-group">
+                <label class="form-label">GitHub Repository (VD: owner/repo)</label>
+                <input type="text" id="githubRepo" class="form-control" placeholder="org/repo-name">
+            </div>
+            <div class="crud-modal-actions">
+                <button type="button" class="btn btn-cancel" onclick="closeModal()">Hủy</button>
+                <button type="submit" class="btn btn-submit">Lưu</button>
+            </div>
+        </form>
+    </div>
+</div>
+}
+
+<!-- Modal Thêm thành viên vào nhóm (Lecturer / Admin) -->
+@if (isLecturer || isAdmin)
+{
+<div id="addMemberModal" class="crud-modal-overlay" onclick="if(event.target === this) closeAddMemberModal()">
+    <div class="crud-modal-box" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 class="modal-title">Thêm thành viên vào nhóm</h2>
+            <button type="button" class="modal-close" onclick="closeAddMemberModal()" aria-label="Đóng"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="addMemberForm" onsubmit="addMemberSubmit(event)">
+            <input type="hidden" id="addMemberGroupId">
+            <div class="form-input-group">
+                <label class="form-label">Chọn user (chưa ở trong nhóm)</label>
+                <select id="addMemberUserId" class="form-control" required>
+                    <option value="">-- Chọn --</option>
+                </select>
+            </div>
+            <div class="crud-modal-actions">
+                <button type="button" class="btn btn-cancel" onclick="closeAddMemberModal()">Hủy</button>
+                <button type="submit" class="btn btn-submit">Thêm</button>
+            </div>
+        </form>
+    </div>
+</div>
+}
+
+<script>
+    const isAdmin = @(isAdmin ? "true" : "false");
+    const isLecturer = @(isLecturer ? "true" : "false");
+    const colCount = @(isLecturer || isAdmin ? 6 : 5);
+
+    const groupModal = document.getElementById('groupModal');
+    const addMemberModal = document.getElementById('addMemberModal');
+    function setModalOpen(open) { if (groupModal) groupModal.classList.toggle('is-open', open); }
+    function setAddMemberModalOpen(open) { if (addMemberModal) addMemberModal.classList.toggle('is-open', open); }
+
+    async function loadGroups() {
+        try {
+            const res = await fetch('/api/groups', { credentials: 'include' });
+            if (!res.ok) throw new Error(res.status);
+            const groups = await res.json();
+            const tbody = document.getElementById('groupsTableBody');
+            tbody.innerHTML = groups.map(g => {
+                let actions = '';
+                if (isAdmin) {
+                    actions += `<button type="button" class="action-btn" onclick='openEditModal("${g.id}", ${JSON.stringify(g.code)}, ${JSON.stringify(g.name)}, ${JSON.stringify(g.jiraProjectKey || '')}, ${JSON.stringify(g.githubRepo || '')})' title="Sửa"><i class="fas fa-edit"></i></button>`;
+                    actions += `<button type="button" class="action-btn action-delete" onclick="deleteGroup('${g.id}')" title="Xóa"><i class="fas fa-trash"></i></button>`;
+                }
+                if ((isLecturer || isAdmin)) {
+                    actions = `<button type="button" class="action-btn" onclick="openAddMemberModal('${g.id}', '${escapeHtml(g.code)}')" title="Thêm thành viên"><i class="fas fa-user-plus"></i></button>` + actions;
+                }
+                const memberCol = (isLecturer || isAdmin)
+                    ? `<td><span class="badge badge-muted" id="memberCount-${g.id}">-</span></td>`
+                    : '';
+                return `<tr>
+                    <td style="font-weight: 600; color: #60a5fa;">${escapeHtml(g.code)}</td>
+                    <td>${escapeHtml(g.name)}</td>
+                    <td><span class="badge badge-muted">${escapeHtml(g.jiraProjectKey || 'Chưa cấu hình')}</span></td>
+                    <td style="font-size: 0.875rem; color: var(--text-muted);">${escapeHtml(g.githubRepo || 'Chưa cấu hình')}</td>
+                    ${memberCol}
+                    <td class="action-cell">${actions}</td>
+                </tr>`;
+            }).join('');
+            if ((isLecturer || isAdmin) && groups.length) {
+                for (const g of groups) {
+                    const r = await fetch('/api/groups/' + g.id + '/members', { credentials: 'include' });
+                    if (r.ok) { const m = await r.json(); document.getElementById('memberCount-' + g.id)?.replaceWith(document.createTextNode(m.length)); }
+                }
+            }
+        } catch (err) {
+            document.getElementById('groupsTableBody').innerHTML = '<tr><td colspan="' + colCount + '" class="text-center" style="padding: 2rem; color: #f87171;">Lỗi tải dữ liệu. Đăng nhập lại nếu cần.</td></tr>';
+        }
+    }
+    function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+    function openCreateModal() {
+        document.getElementById('modalTitle').textContent = 'Thêm nhóm dự án';
+        document.getElementById('groupForm').reset();
+        document.getElementById('groupId').value = '';
+        setModalOpen(true);
+    }
+    function openEditModal(id, code, name, jira, github) {
+        document.getElementById('modalTitle').textContent = 'Chỉnh sửa nhóm';
+        document.getElementById('groupId').value = id;
+        document.getElementById('groupCode').value = code;
+        document.getElementById('groupName').value = name;
+        document.getElementById('jiraKey').value = jira || '';
+        document.getElementById('githubRepo').value = github || '';
+        setModalOpen(true);
+    }
+    function closeModal() { setModalOpen(false); }
+    async function saveGroup(e) {
+        e.preventDefault();
+        const id = document.getElementById('groupId').value;
+        const data = { code: document.getElementById('groupCode').value.trim(), name: document.getElementById('groupName').value.trim(), jiraProjectKey: document.getElementById('jiraKey').value.trim() || null, githubRepo: document.getElementById('githubRepo').value.trim() || null };
+        const res = await fetch(id ? '/api/groups/' + id : '/api/groups', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data), credentials: 'include' });
+        if (res.ok) { closeModal(); loadGroups(); return; }
+        const text = await res.text();
+        let msg = (() => { try { const o = JSON.parse(text); return o.message || o.detail || o.title; } catch (_) { return text; } })() || 'Không lưu được.';
+        if (res.status === 401) msg = 'Bạn cần đăng nhập (Admin).';
+        if (res.status === 403) msg = 'Chỉ Admin mới thêm/sửa nhóm.';
+        alert('Lỗi: ' + msg);
+    }
+    async function deleteGroup(id) {
+        if (!confirm('Bạn có chắc muốn xóa nhóm này?')) return;
+        const res = await fetch('/api/groups/' + id, { method: 'DELETE', credentials: 'include' });
+        if (res.ok) loadGroups(); else alert('Không xóa được.');
+    }
+
+    async function openAddMemberModal(groupId, groupCode) {
+        document.getElementById('addMemberGroupId').value = groupId;
+        const sel = document.getElementById('addMemberUserId');
+        sel.innerHTML = '<option value="">Đang tải...</option>';
+        setAddMemberModalOpen(true);
+        const res = await fetch('/api/groups/' + groupId + '/available-users', { credentials: 'include' });
+        const users = await res.json();
+        sel.innerHTML = '<option value="">-- Chọn user --</option>' + users.map(u => `<option value="${u.id}">${escapeHtml(u.userName || u.email)} (${escapeHtml(u.email)})</option>`).join('');
+    }
+    function closeAddMemberModal() { setAddMemberModalOpen(false); }
+    async function addMemberSubmit(e) {
+        e.preventDefault();
+        const groupId = document.getElementById('addMemberGroupId').value;
+        const userId = document.getElementById('addMemberUserId').value;
+        if (!userId) return;
+        const res = await fetch('/api/groups/' + groupId + '/members', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId: userId }), credentials: 'include' });
+        if (res.ok) { closeAddMemberModal(); loadGroups(); alert('Đã thêm thành viên.'); return; }
+        const text = await res.text();
+        let msg = (() => { try { const o = JSON.parse(text); return o.message || o.detail; } catch (_) { return text; } })() || 'Không thêm được.';
+        if (res.status === 403) msg = 'Bạn không có quyền thêm thành viên vào nhóm này.';
+        alert('Lỗi: ' + msg);
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeModal(); closeAddMemberModal(); } });
+    window.onload = loadGroups;
+</script>

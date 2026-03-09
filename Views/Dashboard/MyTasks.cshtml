@@ -1,0 +1,126 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Công việc của tôi";
+}
+
+<div class="page-header animate__animated animate__fadeIn">
+    <h1 class="page-title">Công việc được giao</h1>
+    <p class="text-muted">Xem và cập nhật trạng thái tiến độ công việc của bạn.</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <div class="content-card col-span-2">
+        <div class="card-header">
+            <h2 class="card-title">Danh sách công việc</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Công việc</th>
+                        <th>Jira Key</th>
+                        <th>Trạng thái</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="myTasksTableBody">
+                    <tr><td colspan="4" class="text-center py-10">Đang tải...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="flex flex-col gap-6">
+        <div class="content-card">
+            <div class="card-header">
+                <h2 class="card-title">Thống kê cá nhân</h2>
+            </div>
+            <div id="personalStats" class="py-4">
+                <div class="flex justify-between mb-4">
+                    <span class="text-slate-400">Hoàn thành:</span>
+                    <span id="statDone" class="font-bold text-green-500">0</span>
+                </div>
+                <div class="flex justify-between mb-4">
+                    <span class="text-slate-400">Đang làm:</span>
+                    <span id="statProgress" class="font-bold text-blue-500">0</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Tổng số:</span>
+                    <span id="statTotal" class="font-bold">0</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-card">
+             <div class="card-header">
+                <h2 class="card-title">GitHub activity</h2>
+            </div>
+            <p class="text-xs text-slate-500">Sẽ hiển thị số lượng commit gần đây của bạn.</p>
+            <div id="commitCount" class="text-3xl font-bold mt-2 text-gradient">0 Commits</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function loadMyData() {
+        // In a real app, the API would know the User ID from the JWT/Session
+        // For now, we fetch tasks and filtering might be needed or handled by backend /api/report/personal-stats
+        
+        try {
+            // Get stats
+            const sRes = await fetch('/api/reports/personal-stats', { credentials: 'include' });
+            const stats = await sRes.json();
+            document.getElementById('statTotal').innerText = stats.totalTasks;
+            document.getElementById('statDone').innerText = stats.doneTasks;
+            document.getElementById('statProgress').innerText = stats.inProgressTasks;
+            document.getElementById('commitCount').innerText = `${stats.totalCommits} Commits`;
+
+            // Get tasks (Ideally an endpoint like /api/tasks/my)
+            // Using /api/tasks and filtering on client if needed, but backend should handle it
+            const tRes = await fetch('/api/tasks', { credentials: 'include' }); 
+            const tasks = await tRes.json();
+            
+            const tbody = document.getElementById('myTasksTableBody');
+            tbody.innerHTML = tasks.length ? tasks.map(t => `
+                <tr>
+                    <td>
+                        <div class="font-medium">${t.title}</div>
+                        <div class="text-xs text-slate-500">${t.description || ''}</div>
+                    </td>
+                    <td><span class="text-blue-400 font-mono">${t.jiraIssueKey || 'N/A'}</span></td>
+                    <td>
+                        <span class="status-badge ${t.status === 2 ? 'status-done' : t.status === 1 ? 'status-progress' : 'status-todo'}">
+                            ${t.status === 2 ? 'Done' : t.status === 1 ? 'Working' : 'Todo'}
+                        </span>
+                    </td>
+                    <td>
+                        <select class="bg-slate-800 border-0 rounded text-xs p-1" onchange="updateTaskStatus('${t.id}', this.value)">
+                            <option value="0" ${t.status === 0 ? 'selected' : ''}>To Do</option>
+                            <option value="1" ${t.status === 1 ? 'selected' : ''}>In Progress</option>
+                            <option value="2" ${t.status === 2 ? 'selected' : ''}>Done</option>
+                        </select>
+                    </td>
+                </tr>
+            `).join('') : '<tr><td colspan="4" class="text-center py-10">Bạn chưa có công việc nào.</td></tr>';
+
+        } catch (err) {
+            console.error(err);
+        }
+    }
+
+    async function updateTaskStatus(taskId, status) {
+        const res = await fetch(`/api/tasks/${taskId}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: parseInt(status) }),
+            credentials: 'include'
+        });
+        if (res.ok) {
+            loadMyData();
+        } else {
+            alert('Không thể cập nhật trạng thái');
+        }
+    }
+
+    window.onload = loadMyData;
+</script>

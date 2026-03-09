@@ -1,0 +1,37 @@
+﻿  Determining projects to restore...
+D:\Netcore\SWD\SWD\SWD.csproj : warning NU1604: Project dependency Microsoft.AspNetCore.Authentication.JwtBearer does not contain an inclusive lower bound. Include a lower bound in the dependency version to ensure consistent restore results.
+D:\Netcore\SWD\SWD\SWD.csproj : warning NU1604: Project dependency Microsoft.AspNetCore.Identity.EntityFrameworkCore does not contain an inclusive lower bound. Include a lower bound in the dependency version to ensure consistent restore results.
+D:\Netcore\SWD\SWD\SWD.csproj : warning NU1604: Project dependency Microsoft.EntityFrameworkCore.SqlServer does not contain an inclusive lower bound. Include a lower bound in the dependency version to ensure consistent restore results.
+D:\Netcore\SWD\SWD\SWD.csproj : warning NU1604: Project dependency Microsoft.EntityFrameworkCore.Tools does not contain an inclusive lower bound. Include a lower bound in the dependency version to ensure consistent restore results.
+D:\Netcore\SWD\SWD\SWD.csproj : warning NU1604: Project dependency Swashbuckle.AspNetCore does not contain an inclusive lower bound. Include a lower bound in the dependency version to ensure consistent restore results.
+  All projects are up-to-date for restore.
+D:\Netcore\SWD\SWD\SWD.csproj : warning NU1604: Project dependency Microsoft.AspNetCore.Authentication.JwtBearer does not contain an inclusive lower bound. Include a lower bound in the dependency version to ensure consistent restore results.
+D:\Netcore\SWD\SWD\SWD.csproj : warning NU1604: Project dependency Microsoft.AspNetCore.Identity.EntityFrameworkCore does not contain an inclusive lower bound. Include a lower bound in the dependency version to ensure consistent restore results.
+D:\Netcore\SWD\SWD\SWD.csproj : warning NU1604: Project dependency Microsoft.EntityFrameworkCore.SqlServer does not contain an inclusive lower bound. Include a lower bound in the dependency version to ensure consistent restore results.
+D:\Netcore\SWD\SWD\SWD.csproj : warning NU1604: Project dependency Microsoft.EntityFrameworkCore.Tools does not contain an inclusive lower bound. Include a lower bound in the dependency version to ensure consistent restore results.
+D:\Netcore\SWD\SWD\SWD.csproj : warning NU1604: Project dependency Swashbuckle.AspNetCore does not contain an inclusive lower bound. Include a lower bound in the dependency version to ensure consistent restore results.
+D:\Netcore\SWD\SWD\Data\AppDbContext.cs(7,14): error CS0311: The type 'SWD.Entities.ApplicationUser' cannot be used as type parameter 'TUser' in the generic type or method 'IdentityDbContext<TUser, TRole, TKey>'. There is no implicit reference conversion from 'SWD.Entities.ApplicationUser' to 'Microsoft.AspNetCore.Identity.EntityFrameworkCore.IdentityUser<System.Guid>'. [D:\Netcore\SWD\SWD\SWD.csproj]
+D:\Netcore\SWD\SWD\Data\AppDbContext.cs(7,14): error CS0311: The type 'Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>' cannot be used as type parameter 'TRole' in the generic type or method 'IdentityDbContext<TUser, TRole, TKey>'. There is no implicit reference conversion from 'Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>' to 'Microsoft.AspNetCore.Identity.EntityFrameworkCore.IdentityRole<System.Guid>'. [D:\Netcore\SWD\SWD\SWD.csproj]
+D:\Netcore\SWD\SWD\Dtos\TaskDtos.cs(12,46): error CS0104: 'TaskStatus' is an ambiguous reference between 'SWD.Entities.TaskStatus' and 'System.Threading.Tasks.TaskStatus' [D:\Netcore\SWD\SWD\SWD.csproj]
+D:\Netcore\SWD\SWD\Dtos\TaskDtos.cs(18,5): error CS0104: 'TaskStatus' is an ambiguous reference between 'SWD.Entities.TaskStatus' and 'System.Threading.Tasks.TaskStatus' [D:\Netcore\SWD\SWD\SWD.csproj]
+
+Build FAILED.
+
+D:\Netcore\SWD\SWD\SWD.csproj : warning NU1604: Project dependency Microsoft.AspNetCore.Authentication.JwtBearer does not contain an inclusive lower bound. Include a lower bound in the dependency version to ensure consistent restore results.
+D:\Netcore\SWD\SWD\SWD.csproj : warning NU1604: Project dependency Microsoft.AspNetCore.Identity.EntityFrameworkCore does not contain an inclusive lower bound. Include a lower bound in the dependency version to ensure consistent restore results.
+D:\Netcore\SWD\SWD\SWD.csproj : warning NU1604: Project dependency Microsoft.EntityFrameworkCore.SqlServer does not contain an inclusive lower bound. Include a lower bound in the dependency version to ensure consistent restore results.
+D:\Netcore\SWD\SWD\SWD.csproj : warning NU1604: Project dependency Microsoft.EntityFrameworkCore.Tools does not contain an inclusive lower bound. Include a lower bound in the dependency version to ensure consistent restore results.
+D:\Netcore\SWD\SWD\SWD.csproj : warning NU1604: Project dependency Swashbuckle.AspNetCore does not contain an inclusive lower bound. Include a lower bound in the dependency version to ensure consistent restore results.
+D:\Netcore\SWD\SWD\SWD.csproj : warning NU1604: Project dependency Microsoft.AspNetCore.Authentication.JwtBearer does not contain an inclusive lower bound. Include a lower bound in the dependency version to ensure consistent restore results.
+D:\Netcore\SWD\SWD\SWD.csproj : warning NU1604: Project dependency Microsoft.AspNetCore.Identity.EntityFrameworkCore does not contain an inclusive lower bound. Include a lower bound in the dependency version to ensure consistent restore results.
+D:\Netcore\SWD\SWD\SWD.csproj : warning NU1604: Project dependency Microsoft.EntityFrameworkCore.SqlServer does not contain an inclusive lower bound. Include a lower bound in the dependency version to ensure consistent restore results.
+D:\Netcore\SWD\SWD\SWD.csproj : warning NU1604: Project dependency Microsoft.EntityFrameworkCore.Tools does not contain an inclusive lower bound. Include a lower bound in the dependency version to ensure consistent restore results.
+D:\Netcore\SWD\SWD\SWD.csproj : warning NU1604: Project dependency Swashbuckle.AspNetCore does not contain an inclusive lower bound. Include a lower bound in the dependency version to ensure consistent restore results.
+D:\Netcore\SWD\SWD\Data\AppDbContext.cs(7,14): error CS0311: The type 'SWD.Entities.ApplicationUser' cannot be used as type parameter 'TUser' in the generic type or method 'IdentityDbContext<TUser, TRole, TKey>'. There is no implicit reference conversion from 'SWD.Entities.ApplicationUser' to 'Microsoft.AspNetCore.Identity.EntityFrameworkCore.IdentityUser<System.Guid>'. [D:\Netcore\SWD\SWD\SWD.csproj]
+D:\Netcore\SWD\SWD\Data\AppDbContext.cs(7,14): error CS0311: The type 'Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>' cannot be used as type parameter 'TRole' in the generic type or method 'IdentityDbContext<TUser, TRole, TKey>'. There is no implicit reference conversion from 'Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>' to 'Microsoft.AspNetCore.Identity.EntityFrameworkCore.IdentityRole<System.Guid>'. [D:\Netcore\SWD\SWD\SWD.csproj]
+D:\Netcore\SWD\SWD\Dtos\TaskDtos.cs(12,46): error CS0104: 'TaskStatus' is an ambiguous reference between 'SWD.Entities.TaskStatus' and 'System.Threading.Tasks.TaskStatus' [D:\Netcore\SWD\SWD\SWD.csproj]
+D:\Netcore\SWD\SWD\Dtos\TaskDtos.cs(18,5): error CS0104: 'TaskStatus' is an ambiguous reference between 'SWD.Entities.TaskStatus' and 'System.Threading.Tasks.TaskStatus' [D:\Netcore\SWD\SWD\SWD.csproj]
+    10 Warning(s)
+    4 Error(s)
+
+Time Elapsed 00:00:03.02

@@ -1,0 +1,115 @@
+﻿@{
+    ViewData["Title"] = "SWP Tracker - Quản lý dự án thông minh";
+}
+
+<div class="container overflow-hidden">
+    <section class="hero-section">
+        <div class="badge rounded-pill bg-primary bg-opacity-10 text-primary px-3 py-2 mb-4 border border-primary border-opacity-20 animate__animated animate__fadeInDown">
+            <i class="bi bi-rocket-takeoff me-2"></i> Dành cho sinh viên SWP391
+        </div>
+        <h1 class="hero-title animate__animated animate__fadeInUp">
+            Quản lý dự án <span class="text-gradient">thông minh</span><br />
+            cho đào tạo phần mềm
+        </h1>
+        <p class="hero-subtitle animate__animated animate__fadeInUp" style="animation-delay: 0.1s">
+            Tích hợp Jira & GitHub — Tự động tạo SRS, theo dõi tiến độ, đánh giá đóng góp cá nhân. 
+            Từ requirement đến code, mọi thứ đều được kết nối.
+        </p>
+        <div class="d-flex justify-content-center gap-3 mt-4 animate__animated animate__fadeInUp" style="animation-delay: 0.2s">
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <a asp-controller="Dashboard" asp-action="Index" class="btn btn-primary-glow btn-lg px-5">
+                    Vào Dashboard <span class="ms-2">→</span>
+                </a>
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Login" class="btn btn-primary-glow btn-lg px-5">
+                    Bắt đầu ngay <span class="ms-2">→</span>
+                </a>
+            }
+            <a href="#features" class="btn btn-outline-light btn-lg px-4 rounded-3 border-opacity-25">
+                Tìm hiểu thêm
+            </a>
+        </div>
+
+        <div class="row mt-5 pt-5 text-center animate__animated animate__fadeInUp" style="animation-delay: 0.3s">
+            <div class="col-md-3 stat-item">
+                <h3 class="text-gradient">80%</h3>
+                <p class="text-muted small">Giảm thời gian tạo SRS</p>
+            </div>
+            <div class="col-md-3 stat-item">
+                <h3 class="text-gradient">100+</h3>
+                <p class="text-muted small">Dự án hỗ trợ</p>
+            </div>
+            <div class="col-md-3 stat-item">
+                <h3 class="text-gradient">24/7</h3>
+                <p class="text-muted small">Theo dõi tiến độ</p>
+            </div>
+            <div class="col-md-3 stat-item">
+                <h3 class="text-gradient">&lt; 2s</h3>
+                <p class="text-muted small">Thời gian đáp ứng</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="py-5">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold display-5 mb-3">Tính năng <span class="text-gradient">vượt trội</span></h2>
+            <p class="text-muted fs-5">Mọi thứ bạn cần để quản lý dự án phần mềm chuyên nghiệp</p>
+        </div>
+        
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="bi bi-file-earmark-text fs-4"></i>
+                </div>
+                <h4 class="fw-bold mb-3">Tự động tạo SRS</h4>
+                <p class="text-muted mb-0 small">Trích xuất requirements từ Jira và generate tài liệu SRS chuẩn IEEE 830 một cách chính xác.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="bi bi-github fs-4"></i>
+                </div>
+                <h4 class="fw-bold mb-3">Tích hợp GitHub</h4>
+                <p class="text-muted mb-0 small">Phân tích commit patterns và pull request để đánh giá đóng góp của từng thành viên tự động.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="bi bi-cpu fs-4"></i>
+                </div>
+                <h4 class="fw-bold mb-3">AI Intelligence</h4>
+                <p class="text-muted mb-0 small">Sử dụng AI để phân loại task và dự đoán rủi ro chậm trễ của dự án dựa trên dữ liệu lịch sử.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="bi bi-graph-up-arrow fs-4"></i>
+                </div>
+                <h4 class="fw-bold mb-3">Dashboard trực quan</h4>
+                <p class="text-muted mb-0 small">Theo dõi Burn-down chart và Velocity của nhóm trong thời gian thực với giao diện hiện đại.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-5 mt-5">
+        <div class="glass-card p-5 text-center">
+            <h2 class="fw-bold mb-5">Hệ sinh thái kết nối</h2>
+            <div class="d-flex justify-content-center align-items-center gap-3 gap-md-4 flex-wrap">
+                <div class="trace-pill">Requirement</div>
+                <i class="bi bi-chevron-right text-muted opacity-50 d-none d-md-block"></i>
+                <div class="trace-pill">Jira Task</div>
+                <i class="bi bi-chevron-right text-muted opacity-50 d-none d-md-block"></i>
+                <div class="trace-pill">Commit Code</div>
+                <i class="bi bi-chevron-right text-muted opacity-50 d-none d-md-block"></i>
+                <div class="trace-pill">SRS Document</div>
+                <i class="bi bi-chevron-right text-muted opacity-50 d-none d-md-block"></i>
+                <div class="trace-pill">Evaluation</div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="py-5 text-center text-muted border-top border-white border-opacity-10 mt-5">
+        <p class="small mb-0">&copy; 2024 SWP Tracker. Developed by FPT Students.</p>
+    </footer>
+</div>
+

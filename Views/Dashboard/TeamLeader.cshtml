@@ -1,0 +1,131 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Team Leader";
+}
+
+<div class="page-header animate__animated animate__fadeIn">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="page-title">Quản lý Nhóm</h1>
+            <p class="text-muted">Đồng bộ Jira và quản lý tiến độ thành viên.</p>
+        </div>
+        <div class="flex gap-3">
+            <button class="btn btn-primary-glow px-4 py-2" onclick="syncJira()">
+                <i class="fas fa-sync mr-2"></i> Sync Jira
+            </button>
+            <button class="btn glass-card px-4 py-2" onclick="generateSrs()">
+                <i class="fas fa-file-pdf mr-2"></i> Xuất SRS
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon bg-blue-500/10 text-blue-500"><i class="fas fa-tasks"></i></div>
+        <div id="statTotal" class="stat-value">0/0</div>
+        <div class="stat-label">Tasks hoàn thành</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-purple-500/10 text-purple-500"><i class="fas fa-code-commit"></i></div>
+        <div id="statCommits" class="stat-value">0</div>
+        <div class="stat-label">Commits tuần này</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon bg-green-500/10 text-green-500"><i class="fas fa-chart-pie"></i></div>
+        <div id="statProgress" class="stat-value">0%</div>
+        <div class="stat-label">Tiến độ Sprint</div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="content-card">
+        <div class="card-header">
+            <h2 class="card-title">Danh sách Task từ Jira</h2>
+            <a href="/Dashboard/Tasks" class="text-blue-500 text-sm">Quản lý tasks</a>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Tiêu đề</th>
+                    <th>Người thực hiện</th>
+                    <th>Trạng thái</th>
+                </tr>
+            </thead>
+            <tbody id="tasksBody">
+                <tr><td colspan="3" class="text-center py-10">Đang tải...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="content-card">
+        <div class="card-header">
+            <h2 class="card-title">Đóng góp của thành viên</h2>
+        </div>
+        <div id="contributionsBody" class="flex flex-column gap-3">
+            <p class="text-muted text-sm">Đang tải dữ liệu đóng góp...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentGroupId = null;
+
+    async function loadDashboardData() {
+        const groupsRes = await fetch('/api/groups', { credentials: 'include' });
+        const groups = await groupsRes.json();
+        if (groups.length === 0) return;
+        currentGroupId = groups[0].id; // Simplified for demo
+
+        // Load Stats
+        const statsRes = await fetch(`/api/reports/progress?groupId=${currentGroupId}`, { credentials: 'include' });
+        const stats = await statsRes.json();
+        document.getElementById('statTotal').innerText = `${stats.done}/${stats.total}`;
+        document.getElementById('statProgress').innerText = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) + '%' : '0%';
+
+        // Load Tasks
+        const tasksRes = await fetch(`/api/tasks?groupId=${currentGroupId}`, { credentials: 'include' });
+        const tasks = await tasksRes.json();
+        const tasksBody = document.getElementById('tasksBody');
+        tasksBody.innerHTML = tasks.slice(0, 5).map(t => `
+            <tr>
+                <td>${t.title}</td>
+                <td class="text-xs">${t.assigneeUserId.substring(0,8)}...</td>
+                <td><span class="status-badge ${t.status === 2 ? 'status-done' : t.status === 1 ? 'status-progress' : 'status-todo'}">${t.status === 2 ? 'Done' : 'In Progress'}</span></td>
+            </tr>
+        `).join('');
+
+        // Load Commits/Contributions (Simplified)
+        document.getElementById('contributionsBody').innerHTML = `
+            <div class="text-sm">
+                <div class="flex justify-between mb-1">
+                    <span>Thành viên mới</span>
+                    <span>12 commits</span>
+                </div>
+                <div class="w-full bg-gray-800 rounded-full h-1.5">
+                    <div class="bg-blue-500 h-1.5 rounded-full" style="width: 40%"></div>
+                </div>
+            </div>
+        `;
+    }
+
+    async function syncJira() {
+        if (!currentGroupId) return;
+        const res = await fetch(`/api/jira/sync?groupId=${currentGroupId}`, { method: 'POST', credentials: 'include' });
+        if (res.ok) {
+            alert('Đã đồng bộ Jira thành công!');
+            loadDashboardData();
+        }
+    }
+
+    async function generateSrs() {
+        if (!currentGroupId) return;
+        const res = await fetch(`/api/reports/srs?groupId=${currentGroupId}`, { method: 'POST', credentials: 'include' });
+        if (res.ok) {
+            const data = await res.json();
+            alert(`Đã tạo SRS thành công: ${data.title}`);
+        }
+    }
+
+    window.onload = loadDashboardData;
+</script>

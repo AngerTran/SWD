@@ -1,0 +1,99 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Giảng viên";
+}
+
+<div class="page-header animate__animated animate__fadeIn">
+    <h1 class="page-title">Bảng điều khiển Giảng viên</h1>
+    <p class="text-muted">Theo dõi tiến độ các nhóm dự án của bạn.</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card animate__animated animate__zoomIn">
+        <div class="stat-icon bg-blue-500/10 text-blue-500"><i class="fas fa-file-alt"></i></div>
+        <div class="stat-value">45</div>
+        <div class="stat-label">Tổng Requirements</div>
+    </div>
+    <div class="stat-card animate__animated animate__zoomIn" style="animation-delay: 0.1s">
+        <div class="stat-icon bg-green-500/10 text-green-500"><i class="fas fa-tasks"></i></div>
+        <div class="stat-value">62%</div>
+        <div class="stat-label">Tasks hoàn thành</div>
+    </div>
+    <div class="stat-card animate__animated animate__zoomIn" style="animation-delay: 0.2s">
+        <div class="stat-icon bg-purple-500/10 text-purple-500"><i class="fas fa-code-branch"></i></div>
+        <div class="stat-value">1,240</div>
+        <div class="stat-label">Tổng số Commits</div>
+    </div>
+    <div class="stat-card animate__animated animate__zoomIn" style="animation-delay: 0.3s">
+        <div class="stat-icon bg-red-500/10 text-red-500"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="stat-value">3</div>
+        <div class="stat-label">Nhóm cần chú ý</div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="content-card">
+        <div class="card-header">
+            <h2 class="card-title">Tiến độ theo nhóm</h2>
+            <button class="btn btn-sm btn-outline-primary" onclick="exportReports()">Xuất báo cáo</button>
+        </div>
+        <div id="groupsProgressBody" class="flex flex-column gap-4">
+            <p class="text-muted text-sm">Đang tải tiến độ các nhóm...</p>
+        </div>
+    </div>
+
+    <div class="content-card">
+        <div class="card-header">
+            <h2 class="card-title">Thống kê Commit theo nhóm</h2>
+        </div>
+        <div id="commitsStatsBody" class="text-center py-4">
+            <i class="fas fa-chart-line text-4xl text-muted opacity-20 mb-3"></i>
+            <p class="text-sm text-muted">Đang phân tích dữ liệu GitHub...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function loadLecturerDashboard() {
+        const res = await fetch('/api/groups', { credentials: 'include' });
+        const groups = await res.json();
+        
+        const progressBody = document.getElementById('groupsProgressBody');
+        progressBody.innerHTML = '';
+
+        for (const g of groups) {
+            const sRes = await fetch(`/api/reports/progress?groupId=${g.id}`, { credentials: 'include' });
+            const stats = await sRes.json();
+            const percent = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
+            
+            progressBody.innerHTML += `
+                <div class="mb-4">
+                    <div class="flex justify-between mb-2">
+                        <span class="text-sm font-medium">${g.code} - ${g.name}</span>
+                        <span class="text-sm font-medium">${percent}%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 rounded-full h-2">
+                        <div class="bg-blue-500 h-2 rounded-full transition-all duration-1000" style="width: ${percent}%"></div>
+                    </div>
+                    <div class="text-[10px] text-slate-500 mt-1">Done: ${stats.done} / Total: ${stats.total}</div>
+                </div>
+            `;
+        }
+
+        document.getElementById('commitsStatsBody').innerHTML = `
+            <div class="text-left text-sm text-slate-400">
+                <p>Phân tích commit patterns:</p>
+                <ul class="list-disc ml-5 mt-2">
+                    <li>Nhóm G01: 45 commits</li>
+                    <li>Nhóm G02: 12 commits</li>
+                </ul>
+            </div>
+        `;
+    }
+
+    function exportReports() {
+        alert('Đang tạo báo cáo tổng hợp cho tất cả các nhóm...');
+    }
+
+    window.onload = loadLecturerDashboard;
+</script>
