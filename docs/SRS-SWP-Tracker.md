@@ -763,9 +763,29 @@ sequenceDiagram
 
 #### III.1.2 Communication Diagram
 
-Communication diagram nhấn mạnh cấu trúc liên kết giữa các object. Số thứ tự trên mũi tên thể hiện thứ tự gọi. Dưới đây là communication diagram cho **đủ 11 use case** (đối tượng chính và luồng message).
+[Provide the Communication diagram(s) for the feature, see the sample below.]
 
-**UC-01 Đăng nhập**
+Communication diagram nhấn mạnh **cấu trúc và quan hệ giữa các đối tượng** (structure and relationships between objects). Số thứ tự trên mũi tên thể hiện thứ tự gọi message. Dưới đây cung cấp **đủ 11 use case** – mỗi diagram gồm: View/Client, Controller (hoặc Service), AppDbContext (hoặc API ngoài), với các message đánh số 1, 2, 3...
+
+**Bảng tóm tắt – Communication Diagram theo UC**
+
+| UC | Use Case | Đối tượng chính trong diagram |
+|----|----------|-------------------------------|
+| UC-01 | Đăng nhập | Login View, AccountController, UserManager, SignInManager |
+| UC-02 | Quản lý nhóm CRUD | Groups View, GroupController, AppDbContext |
+| UC-03 | Quản lý giảng viên | View, AdminController, UserManager, AppDbContext |
+| UC-04 | Gán lecturer vào nhóm | View, AdminController, AppDbContext |
+| UC-05 | Thêm/Xóa thành viên nhóm | View, GroupController, AppDbContext |
+| UC-06 | Đồng bộ Jira | Sync View, JiraController, JiraService, Jira API, AppDbContext |
+| UC-07 | Quản lý công việc | Tasks View, TaskController, AppDbContext |
+| UC-08 | Cập nhật trạng thái task | View, TaskController, AppDbContext |
+| UC-09 | Tạo SRS | SRS View, ReportController, AppDbContext |
+| UC-10 | Đồng bộ GitHub | View, GitHubService, GitHub API, AppDbContext |
+| UC-11 | Xem thống kê commit / báo cáo | Commits View, ReportController, AppDbContext |
+
+---
+
+**Communication Diagram 1 – UC-01 Đăng nhập**
 
 ```mermaid
 flowchart LR
@@ -778,7 +798,7 @@ flowchart LR
     A -->|7: Redirect| V
 ```
 
-**UC-02 Quản lý nhóm**
+**Communication Diagram 2 – UC-02 Quản lý nhóm**
 
 ```mermaid
 flowchart LR
@@ -789,7 +809,7 @@ flowchart LR
     GC -->|5: Response| V
 ```
 
-**UC-03 Quản lý giảng viên**
+**Communication Diagram 3 – UC-03 Quản lý giảng viên**
 
 ```mermaid
 flowchart LR
@@ -800,7 +820,7 @@ flowchart LR
     AC -->|5: Response| V
 ```
 
-**UC-04 Gán lecturer vào nhóm**
+**Communication Diagram 4 – UC-04 Gán lecturer vào nhóm**
 
 ```mermaid
 flowchart LR
@@ -810,7 +830,7 @@ flowchart LR
     AC -->|4: 200| V
 ```
 
-**UC-05 Thêm/Xóa thành viên nhóm**
+**Communication Diagram 5 – UC-05 Thêm/Xóa thành viên nhóm**
 
 ```mermaid
 flowchart LR
@@ -823,7 +843,7 @@ flowchart LR
     GC -->|7: 200| V
 ```
 
-**UC-06 Đồng bộ Jira**
+**Communication Diagram 6 – UC-06 Đồng bộ Jira**
 
 ```mermaid
 flowchart LR
@@ -837,7 +857,7 @@ flowchart LR
     J -->|8: JSON| V
 ```
 
-**UC-07 Quản lý công việc**
+**Communication Diagram 7 – UC-07 Quản lý công việc**
 
 ```mermaid
 flowchart LR
@@ -848,7 +868,7 @@ flowchart LR
     TC -->|5: TaskResponse| V
 ```
 
-**UC-08 Cập nhật trạng thái task**
+**Communication Diagram 8 – UC-08 Cập nhật trạng thái task**
 
 ```mermaid
 flowchart LR
@@ -870,7 +890,7 @@ flowchart LR
     B -->|"6: TaskResponse"| A
 ```
 
-**UC-09 Tạo SRS**
+**Communication Diagram 9 – UC-09 Tạo SRS**
 
 ```mermaid
 flowchart LR
@@ -883,7 +903,7 @@ flowchart LR
     V -->|7: GET report download| RC
 ```
 
-**UC-10 Đồng bộ GitHub**
+**Communication Diagram 10 – UC-10 Đồng bộ GitHub**
 
 ```mermaid
 flowchart LR
@@ -895,7 +915,7 @@ flowchart LR
     GS -->|6: result| V
 ```
 
-**UC-11 Xem thống kê commit / báo cáo**
+**Communication Diagram 11 – UC-11 Xem thống kê commit / báo cáo**
 
 ```mermaid
 flowchart LR
@@ -910,6 +930,12 @@ flowchart LR
 ### III.2 State Diagram
 
 State diagram cho entity **Task** (TaskItem): các trạng thái là Todo, InProgress, Done; chuyển tiếp khi Team Member / Team Leader / Admin cập nhật trạng thái qua API hoặc giao diện.
+
+![State Diagram – Trạng thái Task (Todo, InProgress, Done)](../assets/state-diagram-task.png)
+
+*Hình: State Diagram – Trạng thái Task (TaskItemStatus: Todo, InProgress, Done).*
+
+**Mã Mermaid (dán vào mermaid.ai nếu cần xem/export lại):**
 
 ```mermaid
 stateDiagram-v2
