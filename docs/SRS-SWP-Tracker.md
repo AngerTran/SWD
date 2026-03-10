@@ -239,9 +239,183 @@ flowchart LR
 
 **Mô tả mẫu – UC-09 Tạo SRS:** User chọn nhóm → bấm Tạo SRS → POST /api/reports/srs?groupId=... → load Group, Tasks (Include AssigneeUser), tạo nội dung SRS, lưu Report → trả về Id, link tải.
 
+#### II.5.2.2 Use Case Descriptions
+
+Bảng tổng hợp và mô tả chi tiết từng use case theo template Functional Description.
+
+**Bảng Use Cases**
+
+| ID | Use Case | Actors | Use Case Description |
+|----|----------|--------|----------------------|
+| 01 | Đăng nhập / Đăng xuất | Administrator, Lecturer, Team Leader, Team Member | User nhập email/mật khẩu; hệ thống xác thực và tạo session (Cookie) hoặc trả JWT; đăng xuất hủy session. |
+| 02 | Quản lý nhóm (CRUD) | Administrator | Tạo, xem, sửa, xóa nhóm; cấu hình Code, Name, JiraProjectKey, GitHubRepo. |
+| 03 | Quản lý giảng viên | Administrator | Tạo/xóa tài khoản lecturer; quản lý danh sách giảng viên. |
+| 04 | Gán giảng viên vào nhóm | Administrator | Gán hoặc bỏ gán lecturer vào nhóm (bảng GroupLecturer). |
+| 05 | Thêm/Xóa thành viên nhóm | Administrator, Lecturer | Thêm user vào nhóm hoặc xóa user khỏi nhóm (cập nhật GroupId của user). |
+| 06 | Đồng bộ Jira | Team Leader, Administrator | Chọn nhóm, gọi sync; hệ thống gọi Jira API, map issues → TaskItem, lưu DB; trả số added/updated. |
+| 07 | Quản lý công việc (tạo task, xem) | Team Leader, Administrator | Tạo task thủ công, xem danh sách tasks theo nhóm, phân công member vào task. |
+| 08 | Cập nhật trạng thái task | Team Member, Team Leader, Administrator | Chọn task, đổi trạng thái (Todo / In Progress / Done); member chỉ sửa task được giao cho mình. |
+| 09 | Tạo SRS | Team Leader, Administrator | Chọn nhóm, tạo SRS từ Group + Tasks; hệ thống lưu Report, trả link tải. |
+| 10 | Đồng bộ GitHub commits | Lecturer, Team Leader, Administrator | Chọn nhóm, đồng bộ commits từ GitHub repo vào bảng Commits. |
+| 11 | Xem thống kê commit / báo cáo | Lecturer, Team Leader, Administrator, Team Member | Xem commit stats, commits-by-week, progress, personal-stats theo role và nhóm. |
+
+---
+
+**1 <<UC-01_Đăng nhập / Đăng xuất>>**
+
+| Field | Nội dung |
+|-------|----------|
+| **UC ID and Name** | UC-01 Đăng nhập / Đăng xuất |
+| **Created By** | SWP Tracker Team |
+| **Date Created** | 2026-03 |
+| **Primary Actor** | User (Administrator, Lecturer, Team Leader, Team Member) |
+| **Secondary Actors** | — |
+| **Trigger** | User mở trang login hoặc gọi API login; hoặc user bấm Đăng xuất. |
+| **Description** | User đăng nhập bằng email và mật khẩu; hệ thống xác thực và tạo session (Cookie cho MVC) hoặc trả JWT (cho API). Sau đăng nhập, chuyển hướng theo role. Đăng xuất hủy session. |
+| **Preconditions** | PRE-1: Hệ thống đã có tài khoản (seed hoặc đăng ký). PRE-2: Trình duyệt/client cho phép Cookie (nếu dùng Cookie). |
+| **Postconditions** | POST-1: User đã được xác thực; session hoặc token có hiệu lực. POST-2: (Logout) Session/token đã bị hủy. |
+| **Normal Flow** | 1.0 User mở /login. 2.0 User nhập email, mật khẩu (và có thể chọn "Remember me"). 3.0 User gửi form. 4.0 Hệ thống kiểm tra email tồn tại, kiểm tra mật khẩu. 5.0 Hệ thống tạo Claims (NameIdentifier, Role, Email), SignInAsync Cookie (hoặc trả JWT nếu API). 6.0 Hệ thống chuyển hướng đến Dashboard; Dashboard redirect theo role (Admin/Lecturer/TeamLeader/TeamMember). |
+| **Alternative Flows** | 1.1 (API login): Client gửi POST /api/auth/login với email, password; hệ thống trả JWT và role, email. 2.1 (Logout): User gửi POST /logout (Cookie) hoặc client xóa JWT và gọi POST /api/auth/logout. |
+| **Exceptions** | 1.0.E1: Email hoặc mật khẩu trống → hiển thị "Vui lòng nhập email và mật khẩu." 1.0.E2: Email không tồn tại hoặc mật khẩu sai → "Email hoặc mật khẩu không đúng." |
+| **Priority** | Must Have, High |
+| **Frequency of Use** | Mỗi phiên làm việc (đăng nhập 1 lần; đăng xuất khi kết thúc). |
+| **Business Rules** | BR-Auth: Đăng nhập bằng email; role xác định trang đích. |
+| **Other Information** | AccountController (Cookie); AuthController (JWT). Hybrid scheme: API chấp nhận Cookie + JWT. |
+| **Assumptions** | User có email và mật khẩu đúng; Identity đã cấu hình (PasswordHasher, Cookie/JWT options). |
+
+---
+
+**2 <<UC-06_Đồng bộ Jira>>**
+
+| Field | Nội dung |
+|-------|----------|
+| **UC ID and Name** | UC-06 Đồng bộ Jira |
+| **Created By** | SWP Tracker Team |
+| **Date Created** | 2026-03 |
+| **Primary Actor** | Team Leader hoặc Administrator |
+| **Secondary Actors** | Jira Cloud (external system) |
+| **Trigger** | User chọn nhóm trên trang Sync và bấm "Đồng bộ ngay". |
+| **Description** | Hệ thống gọi Jira Cloud REST API (search issues theo project key của nhóm), map issues sang TaskItem, lưu hoặc cập nhật vào DB; trả số bản ghi thêm và cập nhật. |
+| **Preconditions** | PRE-1: User đã đăng nhập với role Team Leader hoặc Admin. PRE-2: Nhóm đã có JiraProjectKey. PRE-3: Cấu hình Jira (BaseUrl, Email, ApiToken) hợp lệ. |
+| **Postconditions** | POST-1: Bảng Tasks có thêm/cập nhật các bản ghi tương ứng issues Jira của nhóm. POST-2: User thấy thông báo added, updated. |
+| **Normal Flow** | 1.0 User vào trang Đồng bộ Jira. 2.0 User chọn nhóm từ danh sách. 3.0 User bấm "Đồng bộ ngay". 4.0 Hệ thống gọi JiraController.Sync(groupId). 5.0 Hệ thống lấy Group, gọi JiraService.SyncProjectIssuesToTasksAsync. 6.0 JiraService gọi GET /rest/api/3/search?jql=project=KEY, map issues → TaskItem (key, summary, status, assignee). 7.0 Hệ thống upsert Tasks (Add hoặc Update), SaveChangesAsync. 8.0 Hệ thống trả { added, updated }; trang hiển thị kết quả. |
+| **Alternative Flows** | 2.1 Nhóm chưa có JiraProjectKey: hiển thị thông báo cần cấu hình. |
+| **Exceptions** | 1.0.E1: groupId không tồn tại → 404. 1.0.E2: Jira API lỗi (401, 403, timeout) → hiển thị "Đồng bộ thất bại." / message từ API. |
+| **Priority** | Must Have, High |
+| **Frequency of Use** | Vài lần mỗi tuần khi cập nhật backlog từ Jira. |
+| **Business Rules** | BR-Jira: Chỉ sync issues của project tương ứng JiraProjectKey của nhóm. |
+| **Other Information** | JiraController, JiraService; appsettings Jira:BaseUrl, Email, ApiToken. |
+| **Assumptions** | Jira Cloud REST API khả dụng; token có quyền read project/issues. |
+
+---
+
+**3 <<UC-08_Cập nhật trạng thái task>>**
+
+| Field | Nội dung |
+|-------|----------|
+| **UC ID and Name** | UC-08 Cập nhật trạng thái task |
+| **Created By** | SWP Tracker Team |
+| **Date Created** | 2026-03 |
+| **Primary Actor** | Team Member (hoặc Team Leader, Administrator) |
+| **Secondary Actors** | — |
+| **Trigger** | User (Member/Leader/Admin) chọn trạng thái mới (Todo / Working / Done) cho một task trên giao diện. |
+| **Description** | User gửi yêu cầu cập nhật trạng thái task; hệ thống kiểm tra quyền (Team Member chỉ được sửa task mà mình là assignee), cập nhật Status và UpdatedAt, lưu DB; trả TaskResponse hoặc 403. |
+| **Preconditions** | PRE-1: User đã đăng nhập. PRE-2: Task tồn tại. PRE-3: Nếu user là Team Member thì task.AssigneeUserId = currentUser.Id. |
+| **Postconditions** | POST-1: Task.Status và Task.UpdatedAt đã được cập nhật trong DB. POST-2: Client nhận 200 + TaskResponse hoặc 403 + message. |
+| **Normal Flow** | 1.0 User xem danh sách task (của nhóm hoặc task được giao cho mình). 2.0 User chọn trạng thái mới từ dropdown (Todo / Working / Done). 3.0 Client gửi PUT /api/tasks/{id}/status với body { "status": 0|1|2 }. 4.0 Hệ thống load task, kiểm tra role: nếu Team Member thì kiểm tra task.AssigneeUserId == currentUser.Id. 5.0 Hệ thống gán task.Status = req.Status, task.UpdatedAt = UtcNow, SaveChangesAsync. 6.0 Hệ thống trả 200 và TaskResponse; client cập nhật UI. |
+| **Alternative Flows** | 2.1 Team Leader / Admin: không kiểm tra assignee, luôn được cập nhật bất kỳ task nào. |
+| **Exceptions** | 1.0.E1: Task không tồn tại → 404. 1.0.E2: Team Member sửa task không phải của mình → 403, message "Bạn chỉ được cập nhật task được giao cho mình." |
+| **Priority** | Must Have, High |
+| **Frequency of Use** | Nhiều lần mỗi ngày khi member/leader cập nhật tiến độ. |
+| **Business Rules** | BR-Task: Team Member chỉ được cập nhật trạng thái task có AssigneeUserId = currentUser. |
+| **Other Information** | TaskController.UpdateStatus; TaskItemStatus enum (Todo=0, InProgress=1, Done=2). |
+| **Assumptions** | Client gửi đúng task Id và giá trị status hợp lệ. |
+
+---
+
+**4–11. Các Use Case còn lại (tóm tắt theo template)**
+
+Với các UC còn lại (UC-02, UC-03, UC-04, UC-05, UC-07, UC-09, UC-10, UC-11), cấu trúc mô tả giống bảng trên; dưới đây chỉ ghi **UC ID and Name**, **Primary Actor**, **Trigger**, **Description**, **Normal Flow** (số bước chính), **Priority**.
+
+| UC | Name | Primary Actor | Trigger | Description | Normal Flow (tóm tắt) | Priority |
+|----|------|---------------|---------|-------------|------------------------|----------|
+| UC-02 | Quản lý nhóm (CRUD) | Administrator | Vào trang Groups, bấm Thêm/Sửa/Xóa | CRUD nhóm (Code, Name, JiraProjectKey, GitHubRepo) | Chọn thao tác → nhập dữ liệu → gửi POST/PUT/DELETE /api/groups → hệ thống validate (trùng Code) → lưu | Must Have |
+| UC-03 | Quản lý giảng viên | Administrator | Vào trang Lecturers, tạo/xóa lecturer | Tạo hoặc xóa tài khoản lecturer | Gọi API Admin (create/delete user, gán role Lecturer) | Must Have |
+| UC-04 | Gán giảng viên vào nhóm | Administrator | Chọn nhóm, chọn lecturer, bấm Gán/Bỏ gán | Thêm/xóa bản ghi GroupLecturer | POST/DELETE /api/admin/groups/{id}/lecturers | Must Have |
+| UC-05 | Thêm/Xóa thành viên nhóm | Administrator, Lecturer | Trong trang Groups, chọn nhóm, Thêm/Xóa thành viên | Cập nhật GroupId của user (member thuộc nhóm) | GET available-users, POST/DELETE /api/groups/{id}/members | Must Have |
+| UC-07 | Quản lý công việc | Team Leader, Administrator | Vào trang Tasks, Thêm task hoặc Phân công | Tạo task, xem tasks, assign member vào task | POST /api/tasks, GET /api/tasks?groupId=, PUT /api/tasks/{id}/assign | Must Have |
+| UC-09 | Tạo SRS | Team Leader, Administrator | Chọn nhóm, bấm Tạo SRS | Tạo Report type SRS từ Group+Tasks, tải file | POST /api/reports/srs?groupId= → GET /api/reports/{id}?download=true | Must Have |
+| UC-10 | Đồng bộ GitHub | Lecturer, Team Leader, Administrator | Chọn nhóm, bấm đồng bộ GitHub | Gọi GitHub API, map commits → CommitRecord, lưu DB | GitHubService.Sync; POST sync endpoint (nếu có) hoặc tương tự Jira | Should Have |
+| UC-11 | Xem thống kê commit/báo cáo | All roles | Vào trang Commits / Reports | Xem commit-stats, commits-by-week, progress, personal-stats | GET /api/reports/commit-stats, commits-by-week, progress, personal-stats theo groupId/user | Must Have |
+
+*Các trường Preconditions, Postconditions, Exceptions, Business Rules, Assumptions cho từng UC trên có thể bổ sung chi tiết tương tự UC-01, UC-06, UC-08 khi cần.*
+
 #### II.5.3 Activity Diagram
 
-Vẽ trong Word/draw.io cho một use case (ví dụ UC-06): Start → Chọn nhóm → Đồng bộ → Gọi API → [Thành công?] → Cập nhật DB → Hiển thị kết quả → End; nhánh lỗi → Hiển thị lỗi → End.
+Activity diagram dưới đây mô tả luồng **Quản lý công việc và cập nhật trạng thái** theo code SWP Tracker, dùng bốn swimlane: **Team Leader**, **System**, **Team Member**, **Lecturer**. Luồng bắt đầu từ Team Leader đồng bộ Jira hoặc tạo task, hệ thống validate và lưu, Team Leader phân công member, Team Member xem và cập nhật trạng thái; Lecturer xem báo cáo/tiến độ.
+
+![Activity Diagram – Bốn swimlane: Team Leader, System, Team Member, Lecturer](../assets/activity-diagram-swimlanes.png)
+
+*Hình: II.5.3 Activity Diagram – Quản lý công việc và cập nhật trạng thái.*
+
+**Mã Mermaid (nếu trình xem hỗ trợ Mermaid sẽ hiển thị sơ đồ; không thì dùng hình trên):**
+
+```mermaid
+flowchart TB
+    subgraph TeamLeader["Team Leader"]
+        direction TB
+        TL1([Bắt đầu])
+        TL2[Chọn nhóm, Đồng bộ Jira hoặc Tạo task]
+        TL3[Phân công member vào task]
+    end
+
+    subgraph System["System"]
+        direction TB
+        S1[Validate nhóm, Gọi Jira API]
+        S2[Lưu tasks]
+        S3[Lưu assignee]
+        S4{Member là người được giao task?}
+        S5[Cập nhật trạng thái]
+        S6[Từ chối - 403]
+    end
+
+    subgraph TeamMember["Team Member"]
+        direction TB
+        TM1[Xem công việc được giao]
+        TM2[Cập nhật trạng thái task]
+        TM3([Xong])
+    end
+
+    subgraph Lecturer["Lecturer"]
+        direction TB
+        L1[Xem nhóm, Xem báo cáo tiến độ]
+    end
+
+    TL1 --> TL2
+    TL2 --> S1
+    S1 --> S2
+    S2 --> TL3
+    TL3 --> S3
+    S3 --> TM1
+    TM1 --> TM2
+    TM2 --> S4
+    S4 -->|Đúng| S5
+    S4 -->|Sai| S6
+    S5 --> TM3
+    S6 --> TM3
+    L1 --> S2
+```
+
+**Mô tả ngắn theo code:**
+
+| Swimlane | Hoạt động chính | Tương ứng trong code |
+|----------|-----------------|------------------------|
+| **Team Leader** | Chọn nhóm, Đồng bộ Jira, Thêm task, Phân công member | Sync View → POST /api/jira/sync; Tasks View → POST /api/tasks, PUT /api/tasks/{id}/assign; GroupController, TaskController. |
+| **System** | Validate nhóm, gọi JiraService, lưu TaskItem, lấy tasks, validate assignee, cập nhật status (hoặc trả 403) | JiraController.Sync → JiraService; TaskController.Create, AssignTask, UpdateStatus; AppDbContext. |
+| **Team Member** | Xem công việc được giao, chọn trạng thái (Todo/Working/Done) | TeamMember View → GET /api/tasks?assigneeUserId=..., PUT /api/tasks/{id}/status. |
+| **Lecturer** | Xem nhóm được gán, xem báo cáo tiến độ / Commits | Dashboard Groups, Commits; GET /api/groups, /api/reports/commits-by-week, ... |
+
+Điều kiện rẽ nhánh: **[Member là người được giao task?]** — trong `TaskController.UpdateStatus`, nếu user là TeamMember thì chỉ cho phép sửa khi `task.AssigneeUserId == currentUser.Id`; nếu sai thì trả 403 (Từ chối cập nhật).
 
 ---
 
@@ -270,23 +444,265 @@ Vẽ ERD trong Word/draw.io theo các thực thể và quan hệ trên.
 
 ## III. Analysis Models
 
-### III.1 Sequence Diagram (ví dụ UC-06)
+Interaction diagrams minh họa cách các đối tượng tương tác trong một kịch bản use case: **Sequence Diagram** nhấn mạnh thứ tự thời gian của các message; **Communication Diagram** nhấn mạnh cấu trúc và quan hệ giữa các đối tượng. State diagram mô tả các trạng thái và chuyển tiếp của đối tượng (ví dụ Task).
 
-Actor: Team Leader. Objects: Browser → JiraController → JiraService → AppDbContext, JiraService → Jira API. Luồng: Chọn nhóm, POST sync → Controller → Service gọi Jira API → map → SaveChanges → trả kết quả.
+### III.1 Interaction Diagrams
 
-### III.2 State Diagram – Task
+#### III.1.1 Sequence Diagram
 
-States: Todo, InProgress, Done. Transitions: Todo → InProgress → Done (và ngược lại nếu cho phép).
+**Sequence Diagram 1 – Đăng nhập (UC-01)**
+
+Luồng: User nhập email/mật khẩu → AccountController.Login → UserManager.FindByEmailAsync, SignInManager.CheckPasswordSignInAsync → tạo Claims, SignInAsync (Cookie) → Redirect Dashboard.
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant V as Login View
+    participant A as AccountController
+    participant UM as UserManager
+    participant SM as SignInManager
+
+    U->>V: Nhập email, password
+    V->>A: POST /login (email, password)
+    A->>UM: FindByEmailAsync(email)
+    UM-->>A: ApplicationUser
+    A->>SM: CheckPasswordSignInAsync(user, password)
+    SM-->>A: SignInResult
+    A->>A: Build Claims (NameIdentifier, Role, Email)
+    A->>SM: SignInAsync(Cookie, principal)
+    A-->>V: Redirect /Dashboard/Index
+    V-->>U: Chuyển theo role (Admin/Lecturer/TeamLeader/TeamMember)
+```
+
+**Sequence Diagram 2 – Cập nhật trạng thái task (UC-08)**
+
+Actor: Team Member. Luồng: Chọn trạng thái mới trên dropdown → PUT /api/tasks/{id}/status → TaskController.UpdateStatus → kiểm tra quyền (member chỉ sửa task của mình) → AppDbContext.SaveChanges → trả TaskResponse.
+
+```mermaid
+sequenceDiagram
+    participant M as Team Member
+    participant V as TeamMember View
+    participant TC as TaskController
+    participant DB as AppDbContext
+
+    M->>V: Chọn trạng thái (Todo/Working/Done)
+    V->>TC: PUT /api/tasks/{id}/status { status }
+    TC->>DB: FirstOrDefaultAsync(task)
+    DB-->>TC: TaskItem
+    TC->>TC: Check: Member chỉ sửa task được giao cho mình
+    alt AssigneeUserId != currentUser
+        TC-->>V: 403 Forbid
+    else OK
+        TC->>DB: task.Status = req.Status; SaveChangesAsync()
+        DB-->>TC: saved
+        TC-->>V: 200 TaskResponse
+    end
+    V-->>M: Cập nhật badge & thống kê
+```
+
+**Sequence Diagram 3 – Đồng bộ Jira (UC-06)**
+
+Actor: Team Leader. Objects: Browser → JiraController.Sync → JiraService.SyncProjectIssuesToTasksAsync → HttpClient gọi Jira Cloud REST API → map issues → AppDbContext (upsert TaskItem) → trả kết quả.
+
+```mermaid
+sequenceDiagram
+    participant TL as Team Leader
+    participant V as Sync View
+    participant JC as JiraController
+    participant JS as JiraService
+    participant API as Jira Cloud API
+    participant DB as AppDbContext
+
+    TL->>V: Chọn nhóm, bấm "Đồng bộ ngay"
+    V->>JC: POST /api/jira/sync?groupId=...
+    JC->>DB: Groups.FirstOrDefaultAsync(groupId)
+    DB-->>JC: Group
+    JC->>JS: SyncProjectIssuesToTasksAsync(groupId, userId)
+    JS->>API: GET /rest/api/3/search?jql=project=KEY
+    API-->>JS: issues[]
+    JS->>JS: Map issue → TaskItem (key, summary, status, assignee)
+    JS->>DB: Upsert Tasks (Find + Add/Update), SaveChangesAsync
+    DB-->>JS: done
+    JS-->>JC: (added, updated)
+    JC-->>V: 200 { added, updated }
+    V-->>TL: Hiển thị kết quả đồng bộ
+```
+
+#### III.1.2 Communication Diagram
+
+Communication diagram nhấn mạnh cấu trúc liên kết giữa các object. Số thứ tự trên mũi tên thể hiện thứ tự gọi.
+
+**Communication Diagram 1 – Cập nhật trạng thái task (UC-08)**
+
+```mermaid
+flowchart LR
+    subgraph " :Team Member"
+        A((View))
+    end
+    subgraph " :API"
+        B((TaskController))
+    end
+    subgraph " :Data"
+        C((AppDbContext))
+    end
+
+    A -->|"1: PUT status"| B
+    B -->|"2: Load task"| C
+    C -->|"3: TaskItem"| B
+    B -->|"4: Update, Save"| C
+    C -->|"5: ok"| B
+    B -->|"6: TaskResponse"| A
+```
+
+**Communication Diagram 2 – Đồng bộ Jira (UC-06)**
+
+```mermaid
+flowchart LR
+    subgraph Client
+        V((Sync View))
+    end
+    subgraph Server
+        J((JiraController))
+        S((JiraService))
+        D((AppDbContext))
+    end
+    subgraph External
+        API((Jira API))
+    end
+
+    V -->|1: POST sync| J
+    J -->|2: SyncAsync| S
+    S -->|3: GET search| API
+    API -->|4: issues| S
+    S -->|5: Upsert| D
+    D -->|6: done| S
+    S -->|7: (added,updated)| J
+    J -->|8: JSON| V
+```
+
+### III.2 State Diagram
+
+State diagram cho entity **Task** (TaskItem): các trạng thái là Todo, InProgress, Done; chuyển tiếp khi Team Member / Team Leader / Admin cập nhật trạng thái qua API hoặc giao diện.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Todo: Tạo task mới
+    Todo --> InProgress: Bắt đầu thực hiện (status = InProgress)
+    InProgress --> Todo: Chuyển lại Todo (nếu cần)
+    InProgress --> Done: Hoàn thành (status = Done)
+    Done --> InProgress: Mở lại (nếu cần)
+    Done --> [*]: (giữ Done)
+```
+
+*Hình: State Diagram – Trạng thái Task (TaskItemStatus: Todo, InProgress, Done).*
+
+Trong code: `TaskItem.Status` kiểu `TaskItemStatus` (enum); cập nhật qua `PUT /api/tasks/{id}/status` với body `{ "status": 0|1|2 }`. Hệ thống cho phép chuyển qua lại giữa các trạng thái (không ràng buộc nghiệp vụ cứng).
 
 ---
 
 ## IV. Design Specification
 
-### IV.1 High-Level Design
+### IV.1 Integrated Communication Diagrams
 
-Layered: Presentation (MVC Views + API Controllers), Business (JiraService, GitHubService, TokenService), Data (AppDbContext, Entities), Security (Identity, JWT, Cookie).
+Sơ đồ communication tích hợp mô tả luồng tương tác chính giữa các thành phần hệ thống: người dùng (Browser), tầng Presentation (MVC + API Controllers), tầng Business (Services), tầng Data (DbContext, SQL Server), và hệ thống ngoài (Jira, GitHub).
 
-### IV.2 Package / Component
+```mermaid
+flowchart TB
+    subgraph Users
+        U1((Admin))
+        U2((Lecturer))
+        U3((Team Leader))
+        U4((Team Member))
+    end
+
+    subgraph Presentation
+        MVC((MVC Views))
+        API((API Controllers))
+    end
+
+    subgraph Business
+        JiraSvc((JiraService))
+        GitHubSvc((GitHubService))
+        TokenSvc((TokenService))
+    end
+
+    subgraph Data
+        Db((AppDbContext))
+    end
+
+    subgraph External
+        JiraAPI((Jira Cloud))
+        GitHubAPI((GitHub))
+    end
+
+    U1 & U2 & U3 & U4 --> MVC
+    U1 & U2 & U3 & U4 --> API
+    MVC --> API
+    API --> JiraSvc
+    API --> GitHubSvc
+    API --> TokenSvc
+    API --> Db
+    JiraSvc --> JiraAPI
+    GitHubSvc --> GitHubAPI
+    JiraSvc --> Db
+    GitHubSvc --> Db
+```
+
+*Hình: Integrated Communication Diagram – Tương tác giữa User, Presentation, Business, Data và External systems.*
+
+### IV.2 System High-Level Design
+
+Kiến trúc tổng thể SWP Tracker theo mô hình phân tầng (Layered): Presentation (MVC Views + API Controllers), Business (Services), Data (DbContext, Entities), Security (Identity, JWT, Cookie). Sơ đồ dưới minh họa các tầng và thành phần chính.
+
+```mermaid
+flowchart TB
+    subgraph Presentation["Presentation Layer"]
+        Views["MVC Views\n(Dashboard, Groups, Tasks, Sync, SRS, Commits)"]
+        Controllers["API Controllers\n(Auth, Group, Task, Admin, Report, Jira, GitHub)"]
+        Account["AccountController\n(Login/Logout Cookie)"]
+    end
+
+    subgraph Business["Business Layer"]
+        JiraService["JiraService"]
+        GitHubService["GitHubService"]
+        TokenService["TokenService"]
+    end
+
+    subgraph Data["Data Layer"]
+        DbContext["AppDbContext"]
+        Entities["Entities\n(Group, TaskItem, CommitRecord, Report, ApplicationUser, GroupLecturer)"]
+    end
+
+    subgraph Security["Security"]
+        Identity["ASP.NET Identity"]
+        JWT["JWT Bearer"]
+        Cookie["Cookie Auth"]
+    end
+
+    subgraph External["External"]
+        Jira["Jira Cloud API"]
+        GitHub["GitHub API"]
+    end
+
+    Views --> Controllers
+    Account --> Identity
+    Controllers --> Identity
+    Controllers --> JWT
+    Controllers --> Cookie
+    Controllers --> JiraService
+    Controllers --> GitHubService
+    Controllers --> TokenService
+    Controllers --> DbContext
+    JiraService --> DbContext
+    JiraService --> Jira
+    GitHubService --> DbContext
+    GitHubService --> GitHub
+    DbContext --> Entities
+```
+
+*Hình: System High-Level Design – Các tầng và thành phần chính của SWP Tracker.*
+
+### IV.3 Package / Component
 
 | Package | Mô tả |
 |---------|--------|
@@ -297,9 +713,9 @@ Layered: Presentation (MVC Views + API Controllers), Business (JiraService, GitH
 | Dtos, Security | AuthDtos, GroupDtos, TaskDtos; Roles, Options. |
 | Views/Dashboard | Groups, Tasks, Sync, SRS, Commits, Lecturers, ... |
 
-### IV.3 Component and Package Diagram
+### IV.4 Component and Package Diagram
 
-#### IV.3.1 Package Diagram
+#### IV.4.1 Package Diagram
 
 Sơ đồ package thể hiện cấu trúc logic hệ thống SWP Tracker theo các gói chức năng và quan hệ <<Access>> / <<Import>> giữa các gói. (Có thể vẽ lại trong Word/draw.io theo mô tả dưới đây hoặc chèn ảnh mẫu.)
 
@@ -328,7 +744,7 @@ Sơ đồ package thể hiện cấu trúc logic hệ thống SWP Tracker theo c
 | 05 | Integration (External APIs) | Tích hợp hệ thống ngoài: Jira API Adapter, Jira Projects API Adapter, liên kết Issues & Commits. Gọi Jira Cloud REST API và GitHub REST API. |
 | 06 | Configuration | Cấu hình dữ liệu: khóa học và nhóm (Courses & Groups Config Data), user/nhóm và GitHub repos (User & Groups GitHub Repos), cài đặt báo cáo (Settings Reporting Data). Trong code: appsettings, Group.JiraProjectKey, Group.GitHubRepo, SeedExtensions. |
 
-### IV.4 Class Diagram
+### IV.5 Class Diagram
 
 Class diagram dựa trên code web SWP Tracker (Entities, Services, DTOs). Dưới đây là hình tổng quan; phần Mermaid bên dưới thể hiện chi tiết thuộc tính và quan hệ.
 
@@ -584,19 +1000,19 @@ classDiagram
 | AppDbContext | Quản lý DbSet cho Group, GroupLecturer, TaskItem, CommitRecord, Report và Identity. |
 | JiraService, GitHubService | Phụ thuộc AppDbContext, Options (JiraOptions/GitHubOptions), IHttpClientFactory; Controller gọi Service. |
 
-### IV.5 Database Design
+### IV.6 Database Design
 
 Provide the tables relationship following **SQL database naming convention** (snake_case for tables and columns). Dự án triển khai bằng SQL Server + EF Core; các sơ đồ Logical/Physical dùng kiểu dữ liệu chuẩn SQL.
 
 ---
 
-#### IV.5.1. Conceptual Diagram
+#### IV.6.1. Conceptual Diagram
 
 Mức khái niệm: chỉ thực thể và quan hệ. Hệ thống gồm: **User**, **Group**, **GroupLecturer**, **Task**, **Commit**, **Report**, **Role**.
 
 ![Conceptual ERD - Chen style](../assets/erd-chen-style.png)
 
-*Hình: IV.5.1 Conceptual Diagram – ERD ký hiệu Chen (chữ nhật = thực thể, thoi = quan hệ).*
+*Hình: IV.6.1 Conceptual Diagram – ERD ký hiệu Chen (chữ nhật = thực thể, thoi = quan hệ).*
 
 ```mermaid
 erDiagram
@@ -677,13 +1093,13 @@ erDiagram
 
 ---
 
-#### IV.5.2. Logical Diagram
+#### IV.6.2. Logical Diagram
 
 Mức logic: tên bảng và cột theo quy ước SQL (snake_case), kiểu dữ liệu chuẩn SQL.
 
 ![Logical Diagram](../assets/logical-diagram-style.png)
 
-*Hình: IV.5.2 Logical Diagram – Sơ đồ quan hệ bảng (diagram, snake_case).*
+*Hình: IV.6.2 Logical Diagram – Sơ đồ quan hệ bảng (diagram, snake_case).*
 
 **Bảng ứng dụng (application tables):**
 
@@ -796,13 +1212,13 @@ erDiagram
 
 ---
 
-#### IV.5.3. Physical Diagram
+#### IV.6.3. Physical Diagram
 
 Mức vật lý: triển khai thực tế. Dự án dùng **SQL Server** (EF Core). Bảng và cột trong DB dùng PascalCase (Groups, Tasks, AspNetUsers, …); kiểu dữ liệu SQL Server (uniqueidentifier, nvarchar, datetimeoffset).
 
 ![Physical Diagram](../assets/physical-diagram-style.png)
 
-*Hình: IV.5.3 Physical Diagram – Sơ đồ triển khai SQL Server (diagram, PascalCase).*
+*Hình: IV.6.3 Physical Diagram – Sơ đồ triển khai SQL Server (diagram, PascalCase).*
 
 Dưới đây: DDL mẫu (SQL) snake_case và ánh xạ sang triển khai SQL Server.
 

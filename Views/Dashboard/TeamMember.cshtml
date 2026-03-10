@@ -11,17 +11,17 @@
 <div class="stats-grid">
     <div class="stat-card">
         <div class="stat-icon bg-blue-500/10 text-blue-500"><i class="fas fa-clipboard-list"></i></div>
-        <div class="stat-value">5</div>
+        <div id="statTotal" class="stat-value">0</div>
         <div class="stat-label">Tasks được giao</div>
     </div>
     <div class="stat-card">
         <div class="stat-icon bg-yellow-500/10 text-yellow-500"><i class="fas fa-spinner"></i></div>
-        <div class="stat-value">2</div>
+        <div id="statWorking" class="stat-value">0</div>
         <div class="stat-label">Đang thực hiện</div>
     </div>
     <div class="stat-card">
         <div class="stat-icon bg-green-500/10 text-green-500"><i class="fas fa-check-double"></i></div>
-        <div class="stat-value">3</div>
+        <div id="statDone" class="stat-value">0</div>
         <div class="stat-label">Đã hoàn thành</div>
     </div>
 </div>
@@ -30,39 +30,107 @@
     <div class="card-header">
         <h2 class="card-title">Tasks assigned to me</h2>
     </div>
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th>Jira Key</th>
-                <th>Công việc</th>
-                <th>Trạng thái</th>
-                <th>Hành động</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>FK-TM01</td>
-                <td>Implement Login Interface</td>
-                <td><span class="status-badge status-progress">In Progress</span></td>
-                <td>
-                    <select class="form-control py-1 px-2 text-xs" style="width: auto;">
-                        <option>InProgress</option>
-                        <option>Done</option>
-                    </select>
-                </td>
-            </tr>
-            <tr>
-                <td>FK-TM02</td>
-                <td>Unit test for Auth</td>
-                <td><span class="status-badge status-todo">Todo</span></td>
-                <td>
-                     <select class="form-control py-1 px-2 text-xs" style="width: auto;">
-                        <option selected>Todo</option>
-                        <option>InProgress</option>
-                        <option>Done</option>
-                    </select>
-                </td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="overflow-x-auto">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Jira Key</th>
+                    <th>Công việc</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody id="myTasksTableBody">
+                <tr><td colspan="4" class="text-center" style="padding: 2.5rem;">Đang tải...</td></tr>
+            </tbody>
+        </table>
+    </div>
 </div>
+
+<script>
+    let myUserId = null;
+
+    async function loadMyTasks() {
+        try {
+            // Get current user id
+            const meRes = await fetch('/api/auth/me', { credentials: 'include' });
+            if (!meRes.ok) return;
+            const me = await meRes.json();
+            myUserId = me.id;
+
+            // Fetch tasks
+            const tRes = await fetch('/api/tasks?assigneeUserId=' + myUserId, { credentials: 'include' });
+            if (!tRes.ok) throw new Error('Failed to load tasks');
+            const tasks = await tRes.json();
+
+            // Calculate stats
+            let total = tasks.length;
+            let working = tasks.filter(t => t.status === 1).length;
+            let done = tasks.filter(t => t.status === 2).length;
+
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statWorking').textContent = working;
+            document.getElementById('statDone').textContent = done;
+
+            // Render table
+            const tbody = document.getElementById('myTasksTableBody');
+            if (tasks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center" style="padding: 2rem;">Chưa có công việc nào được giao.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = tasks.map(t => `
+                <tr>
+                    <td><span style="color: #60a5fa; font-family: monospace;">${escapeHtml(t.jiraIssueKey || 'Manual')}</span></td>
+                    <td><span style="font-weight: 500;">${escapeHtml(t.title)}</span></td>
+                    <td>
+                        <span class="status-badge ${t.status === 2 ? 'status-done' : t.status === 1 ? 'status-progress' : 'status-todo'}">
+                            ${t.status === 2 ? 'Done' : t.status === 1 ? 'Working' : 'Todo'}
+                        </span>
+                    </td>
+                    <td>
+                        <select class="form-control py-1 px-2 text-xs" style="width: auto;" onchange="updateTaskStatus('${t.id}', this.value)">
+                            <option value="0" ${t.status === 0 ? 'selected' : ''}>Todo</option>
+                            <option value="1" ${t.status === 1 ? 'selected' : ''}>Working</option>
+                            <option value="2" ${t.status === 2 ? 'selected' : ''}>Done</option>
+                        </select>
+                    </td>
+                </tr>
+            `).join('');
+
+        } catch (err) {
+            console.error(err);
+            document.getElementById('myTasksTableBody').innerHTML = '<tr><td colspan="4" class="text-center" style="padding: 2rem; color: #f87171;">Lỗi tải dữ liệu.</td></tr>';
+        }
+    }
+
+    function escapeHtml(s) {
+        const div = document.createElement('div');
+        div.textContent = s || '';
+        return div.innerHTML;
+    }
+
+    async function updateTaskStatus(taskId, statusValue) {
+        try {
+            const res = await fetch(`/api/tasks/${taskId}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: parseInt(statusValue, 10) }),
+                credentials: 'include'
+            });
+            if (res.ok) {
+                loadMyTasks();
+            } else {
+                const err = await res.json().catch(() => ({}));
+                const msg = err.title || err.message || (res.status === 403 ? 'Bạn chỉ được cập nhật task được giao cho mình.' : 'Không thể cập nhật trạng thái.');
+                alert(msg);
+                loadMyTasks();
+            }
+        } catch (e) {
+            alert('Lỗi kết nối. Vui lòng thử lại.');
+            loadMyTasks();
+        }
+    }
+
+    window.onload = loadMyTasks;
+</script>

@@ -19,6 +19,7 @@ public sealed record TaskResponse(
     TaskItemStatus Status,
     string? JiraIssueKey,
     Guid AssigneeUserId,
+    string? AssigneeUserName,
     Guid? GroupId,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt

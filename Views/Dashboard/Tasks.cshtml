@@ -52,21 +52,23 @@
     </div>
 </div>
 
-<!-- Modal Thêm/Sửa Task -->
+<!-- Modal Thêm/Sửa/Phân công Task -->
 <div id="taskModal" class="crud-modal-overlay" onclick="if(event.target === this) closeModal()">
     <div class="crud-modal-box" onclick="event.stopPropagation()">
         <div class="modal-header">
-            <h2 class="modal-title">Phân công công việc</h2>
+            <h2 id="modalTitle" class="modal-title">Phân công công việc</h2>
             <button type="button" class="modal-close" onclick="closeModal()" aria-label="Đóng">
                 <i class="fas fa-times"></i>
             </button>
         </div>
         <form id="taskForm" onsubmit="saveTask(event)">
-            <div class="form-input-group">
+            <input type="hidden" id="editTaskId" value="">
+            <input type="hidden" id="modalMode" value="create">
+            <div class="form-input-group" id="titleGroup">
                 <label class="form-label">Tiêu đề công việc</label>
                 <input type="text" id="taskTitle" class="form-control" required>
             </div>
-            <div class="form-input-group">
+            <div class="form-input-group" id="descGroup">
                 <label class="form-label">Mô tả</label>
                 <textarea id="taskDesc" class="form-control" rows="3" placeholder="Mô tả ngắn (tùy chọn)"></textarea>
             </div>
@@ -78,7 +80,7 @@
             </div>
             <div class="crud-modal-actions">
                 <button type="button" class="btn btn-cancel" onclick="closeModal()">Hủy</button>
-                <button type="submit" class="btn btn-submit">Lưu phân công</button>
+                <button type="submit" class="btn btn-submit">Lưu</button>
             </div>
         </form>
     </div>
@@ -109,7 +111,14 @@
             tbody.innerHTML = tasks.map(t => `
                 <tr>
                     <td><span style="font-weight: 500;">${escapeHtml(t.title)}</span></td>
-                    <td style="font-size: 0.8125rem; color: var(--text-muted);">${(t.assigneeUserId || '').toString().substring(0, 8)}...</td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div class="user-avatar-small" style="width: 24px; height: 24px; background: #e2e8f0; color: #475569; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: bold;">
+                                ${(t.assigneeUserName || t.assigneeUserId || '?').substring(0, 1).toUpperCase()}
+                            </div>
+                            <span style="font-size: 0.875rem;">${escapeHtml(t.assigneeUserName || t.assigneeUserId)}</span>
+                        </div>
+                    </td>
                     <td><span style="color: #60a5fa; font-family: monospace;">${escapeHtml(t.jiraIssueKey || 'Manual')}</span></td>
                     <td>
                         <span class="status-badge ${t.status === 2 ? 'status-done' : t.status === 1 ? 'status-progress' : 'status-todo'}">
@@ -117,7 +126,7 @@
                         </span>
                     </td>
                     <td class="action-cell">
-                        <button type="button" class="action-btn" title="Phân công"><i class="fas fa-user-plus"></i></button>
+                        <button type="button" class="action-btn" title="Phân công" onclick="openAssignModal('${t.id}', '${t.title}', '${t.assigneeUserId}')"><i class="fas fa-user-plus"></i></button>
                     </td>
                 </tr>
             `).join('');
@@ -144,6 +153,13 @@
     }
     async function openCreateModal() {
         document.getElementById('taskForm').reset();
+        document.getElementById('modalMode').value = 'create';
+        document.getElementById('editTaskId').value = '';
+        document.getElementById('modalTitle').textContent = 'Thêm công việc thủ công';
+        document.getElementById('titleGroup').style.display = 'block';
+        document.getElementById('descGroup').style.display = 'block';
+        document.getElementById('taskTitle').required = true;
+        
         const sel = document.getElementById('assigneeId');
         sel.innerHTML = '<option value="">Đang tải...</option>';
         setModalOpen(true);
@@ -152,31 +168,72 @@
         const members = await res.json();
         sel.innerHTML = '<option value="">-- Chọn thành viên --</option>' + members.map(m => `<option value="${m.id}">${escapeHtml(m.userName || m.email)} (${escapeHtml(m.email)})</option>`).join('');
     }
+    
+    async function openAssignModal(id, title, currentAssignee) {
+        document.getElementById('taskForm').reset();
+        document.getElementById('modalMode').value = 'assign';
+        document.getElementById('editTaskId').value = id;
+        document.getElementById('modalTitle').textContent = 'Phân công lại: ' + title;
+        document.getElementById('titleGroup').style.display = 'none';
+        document.getElementById('descGroup').style.display = 'none';
+        document.getElementById('taskTitle').required = false;
+        
+        const sel = document.getElementById('assigneeId');
+        sel.innerHTML = '<option value="">Đang tải...</option>';
+        setModalOpen(true);
+        if (!currentGroupId) { sel.innerHTML = '<option value="">Chưa có nhóm</option>'; return; }
+        const res = await fetch('/api/groups/' + currentGroupId + '/members', { credentials: 'include' });
+        const members = await res.json();
+        sel.innerHTML = '<option value="">-- Chọn thành viên --</option>' + members.map(m => {
+            const selected = m.id === currentAssignee ? 'selected' : '';
+            return `<option value="${m.id}" ${selected}>${escapeHtml(m.userName || m.email)} (${escapeHtml(m.email)})</option>`;
+        }).join('');
+    }
+
     function closeModal() {
         setModalOpen(false);
     }
     async function saveTask(e) {
         e.preventDefault();
+        const mode = document.getElementById('modalMode').value;
         const assigneeId = document.getElementById('assigneeId').value.trim();
-        if (!assigneeId) return alert('Vui lòng nhập User ID người thực hiện.');
-        const data = {
-            title: document.getElementById('taskTitle').value.trim(),
-            description: document.getElementById('taskDesc').value.trim() || null,
-            assigneeUserId: assigneeId,
-            groupId: currentGroupId
-        };
-        const res = await fetch('/api/tasks', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data),
-            credentials: 'include'
-        });
-        if (res.ok) {
-            closeModal();
-            loadData();
-        } else {
-            const err = await res.json().catch(() => ({}));
-            alert('Lỗi: ' + (err.title || err.message || 'Không lưu được.'));
+        if (!assigneeId) return alert('Vui lòng chọn người thực hiện.');
+
+        if (mode === 'create') {
+            const data = {
+                title: document.getElementById('taskTitle').value.trim(),
+                description: document.getElementById('taskDesc').value.trim() || null,
+                assigneeUserId: assigneeId,
+                groupId: currentGroupId
+            };
+            const res = await fetch('/api/tasks', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+                credentials: 'include'
+            });
+            if (res.ok) {
+                closeModal();
+                loadData();
+            } else {
+                const err = await res.json().catch(() => ({}));
+                alert('Lỗi: ' + (err.title || err.message || 'Không lưu được.'));
+            }
+        } else if (mode === 'assign') {
+            const taskId = document.getElementById('editTaskId').value;
+            const res = await fetch(`/api/tasks/${taskId}/assign`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ assigneeUserId: assigneeId }),
+                credentials: 'include'
+            });
+            if (res.ok) {
+                closeModal();
+                loadData();
+            } else {
+                const err = await res.json().catch(() => ({}));
+                alert('Lỗi: ' + (err.title || err.message || 'Không lưu được.'));
+            }
         }
     }
     document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeModal(); });
