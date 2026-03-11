@@ -1,0 +1,58 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Cài đặt";
+}
+
+<div class="page-header animate__animated animate__fadeIn">
+    <h1 class="page-title">Cài đặt hệ thống</h1>
+    <p class="text-muted">Cấu hình tích hợp Jira, GitHub và thông tin ứng dụng. Chỉ Admin có quyền truy cập.</p>
+</div>
+
+<div class="settings-grid">
+    <div class="content-card animate__animated animate__fadeInUp">
+        <div class="card-header">
+            <h2 class="card-title"><i class="fas fa-link" style="margin-right: 0.5rem; color: var(--primary);"></i> Tích hợp Jira</h2>
+        </div>
+        <p class="text-muted" style="margin-bottom: 1rem;">Cấu hình trong <code class="settings-code">appsettings.json</code> — mục <strong>Jira</strong>: BaseUrl, Email, ApiToken, ProjectKey.</p>
+        <ul class="settings-list">
+            <li><strong>BaseUrl:</strong> URL Jira Cloud (vd: https://your-domain.atlassian.net)</li>
+            <li><strong>Email + ApiToken:</strong> Dùng cho Basic Auth khi gọi Jira REST API</li>
+            <li><strong>ProjectKey:</strong> Dùng mặc định nếu nhóm chưa cấu hình Jira Project Key</li>
+        </ul>
+        <a href="/Dashboard/Groups" class="btn btn-outline-primary mt-2">Cấu hình Jira Key theo nhóm →</a>
+    </div>
+
+    <div class="content-card animate__animated animate__fadeInUp">
+        <div class="card-header">
+            <h2 class="card-title"><i class="fab fa-github" style="margin-right: 0.5rem; color: var(--text-main);"></i> Tích hợp GitHub</h2>
+        </div>
+        <p class="text-muted" style="margin-bottom: 1rem;">Cấu hình trong <code class="settings-code">appsettings.json</code> — mục <strong>GitHub</strong>: Owner, Repo, Token.</p>
+        <ul class="settings-list">
+            <li><strong>Owner / Repo:</strong> Dùng mặc định nếu nhóm chưa cấu hình GitHub Repo</li>
+            <li><strong>Token:</strong> Personal Access Token (quyền repo) để gọi GitHub API</li>
+        </ul>
+        <a href="/Dashboard/Groups" class="btn btn-outline-primary mt-2">Cấu hình Repo theo nhóm →</a>
+    </div>
+
+    <div class="content-card animate__animated animate__fadeInUp">
+        <div class="card-header">
+            <h2 class="card-title"><i class="fas fa-info-circle" style="margin-right: 0.5rem; color: var(--primary);"></i> Thông tin ứng dụng</h2>
+        </div>
+        <ul class="settings-list">
+            <li><strong>Ứng dụng:</strong> SWP Tracker</li>
+            <li><strong>Mục đích:</strong> Hỗ trợ quản lý yêu cầu và tiến độ dự án (SWP391)</li>
+            <li><strong>Phiên bản:</strong> 1.0</li>
+        </ul>
+    </div>
+</div>
+
+<style>
+.settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; }
+.settings-list { list-style: none; padding: 0; margin: 0; }
+.settings-list li { padding: 0.5rem 0; border-bottom: 1px solid var(--border-color); font-size: 0.9375rem; }
+.settings-list li:last-child { border-bottom: none; }
+.settings-code { background: rgba(0,0,0,0.3); padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.875rem; }
+.btn-outline-primary { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; border-radius: 10px; border: 1px solid var(--primary); color: var(--primary); text-decoration: none; font-weight: 500; transition: all 0.2s; }
+.btn-outline-primary:hover { background: rgba(59, 130, 246, 0.1); color: #60a5fa; }
+.mt-2 { margin-top: 0.5rem; }
+</style>

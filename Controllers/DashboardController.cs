@@ -61,9 +61,24 @@ public class DashboardController : Controller
         return View();
     }
 
-    [Authorize(Roles = "TeamLeader,Admin")]
-    public IActionResult Sync() => View();
+    [Authorize(Roles = "Lecturer,TeamLeader,Admin")]
+    public IActionResult Sync()
+    {
+        ViewBag.CanSyncJira = User.IsInRole("Admin") || User.IsInRole("TeamLeader");
+        ViewBag.CanSyncGitHub = true; // Lecturer, TeamLeader, Admin đều có thể sync GitHub (theo nhóm được gán)
+        return View();
+    }
 
     [Authorize(Roles = "TeamLeader,Admin")]
     public IActionResult SRS() => View();
+
+    [Authorize(Roles = "Admin")]
+    public IActionResult Settings() => View();
+
+    [Authorize(Roles = "Lecturer,Admin")]
+    public IActionResult Reports()
+    {
+        ViewBag.IsAdmin = User.IsInRole("Admin");
+        return View();
+    }
 }

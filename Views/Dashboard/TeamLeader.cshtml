@@ -4,128 +4,110 @@
 }
 
 <div class="page-header animate__animated animate__fadeIn">
-    <div class="flex justify-between items-center">
+    <div class="page-header-flex">
         <div>
-            <h1 class="page-title">Quản lý Nhóm</h1>
+            <h1 class="page-title">Quản lý nhóm</h1>
             <p class="text-muted">Đồng bộ Jira và quản lý tiến độ thành viên.</p>
         </div>
         <div class="flex gap-3">
-            <button class="btn btn-primary-glow px-4 py-2" onclick="syncJira()">
-                <i class="fas fa-sync mr-2"></i> Sync Jira
-            </button>
-            <button class="btn glass-card px-4 py-2" onclick="generateSrs()">
-                <i class="fas fa-file-pdf mr-2"></i> Xuất SRS
-            </button>
+            <a href="/Dashboard/Sync" class="btn btn-cancel" style="display: inline-flex; align-items: center;"><i class="fas fa-sync" style="margin-right: 0.5rem;"></i> Đồng bộ Jira</a>
+            <a href="/Dashboard/SRS" class="btn-add"><i class="fas fa-file-signature"></i> Tạo SRS</a>
         </div>
     </div>
 </div>
 
 <div class="stats-grid">
     <div class="stat-card">
-        <div class="stat-icon bg-blue-500/10 text-blue-500"><i class="fas fa-tasks"></i></div>
+        <div class="stat-icon stat-icon-blue"><i class="fas fa-tasks"></i></div>
         <div id="statTotal" class="stat-value">0/0</div>
-        <div class="stat-label">Tasks hoàn thành</div>
+        <div class="stat-label">Tasks (Done/Total)</div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon bg-purple-500/10 text-purple-500"><i class="fas fa-code-commit"></i></div>
+        <div class="stat-icon stat-icon-purple"><i class="fas fa-code-branch"></i></div>
         <div id="statCommits" class="stat-value">0</div>
-        <div class="stat-label">Commits tuần này</div>
+        <div class="stat-label">Commits nhóm</div>
     </div>
     <div class="stat-card">
-        <div class="stat-icon bg-green-500/10 text-green-500"><i class="fas fa-chart-pie"></i></div>
+        <div class="stat-icon stat-icon-green"><i class="fas fa-chart-pie"></i></div>
         <div id="statProgress" class="stat-value">0%</div>
-        <div class="stat-label">Tiến độ Sprint</div>
+        <div class="stat-label">Tiến độ</div>
     </div>
 </div>
 
 <div class="dashboard-grid">
-    <div class="content-card">
+    <div class="content-card animate__animated animate__fadeInUp">
         <div class="card-header">
-            <h2 class="card-title">Danh sách Task từ Jira</h2>
-            <a href="/Dashboard/Tasks" class="text-blue-500 text-sm">Quản lý tasks</a>
+            <h2 class="card-title">Tasks gần đây</h2>
+            <a href="/Dashboard/Tasks" class="link-primary">Quản lý tasks</a>
         </div>
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Tiêu đề</th>
-                    <th>Người thực hiện</th>
-                    <th>Trạng thái</th>
-                </tr>
-            </thead>
-            <tbody id="tasksBody">
-                <tr><td colspan="3" class="text-center py-10">Đang tải...</td></tr>
-            </tbody>
-        </table>
+        <div class="overflow-x-auto">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Tiêu đề</th>
+                        <th>Người thực hiện</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody id="tasksBody">
+                    <tr><td colspan="3" class="text-center" style="padding: 2rem;">Đang tải...</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
-
-    <div class="content-card">
+    <div class="content-card animate__animated animate__fadeInUp">
         <div class="card-header">
-            <h2 class="card-title">Đóng góp của thành viên</h2>
+            <h2 class="card-title">Đóng góp thành viên</h2>
+            <a href="/Dashboard/Commits" class="link-primary">Xem Commits</a>
         </div>
-        <div id="contributionsBody" class="flex flex-column gap-3">
-            <p class="text-muted text-sm">Đang tải dữ liệu đóng góp...</p>
+        <div id="contributionsBody" style="font-size: 0.875rem; color: var(--text-muted);">
+            Đang tải...
         </div>
     </div>
 </div>
 
 <script>
-    let currentGroupId = null;
+(function() {
+    var currentGroupId = null;
+    var opts = { credentials: 'include' };
+
+    function esc(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 
     async function loadDashboardData() {
-        const groupsRes = await fetch('/api/groups', { credentials: 'include' });
-        const groups = await groupsRes.json();
-        if (groups.length === 0) return;
-        currentGroupId = groups[0].id; // Simplified for demo
-
-        // Load Stats
-        const statsRes = await fetch(`/api/reports/progress?groupId=${currentGroupId}`, { credentials: 'include' });
-        const stats = await statsRes.json();
-        document.getElementById('statTotal').innerText = `${stats.done}/${stats.total}`;
-        document.getElementById('statProgress').innerText = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) + '%' : '0%';
-
-        // Load Tasks
-        const tasksRes = await fetch(`/api/tasks?groupId=${currentGroupId}`, { credentials: 'include' });
-        const tasks = await tasksRes.json();
-        const tasksBody = document.getElementById('tasksBody');
-        tasksBody.innerHTML = tasks.slice(0, 5).map(t => `
-            <tr>
-                <td>${t.title}</td>
-                <td class="text-xs">${t.assigneeUserId.substring(0,8)}...</td>
-                <td><span class="status-badge ${t.status === 2 ? 'status-done' : t.status === 1 ? 'status-progress' : 'status-todo'}">${t.status === 2 ? 'Done' : 'In Progress'}</span></td>
-            </tr>
-        `).join('');
-
-        // Load Commits/Contributions (Simplified)
-        document.getElementById('contributionsBody').innerHTML = `
-            <div class="text-sm">
-                <div class="flex justify-between mb-1">
-                    <span>Thành viên mới</span>
-                    <span>12 commits</span>
-                </div>
-                <div class="w-full bg-gray-800 rounded-full h-1.5">
-                    <div class="bg-blue-500 h-1.5 rounded-full" style="width: 40%"></div>
-                </div>
-            </div>
-        `;
-    }
-
-    async function syncJira() {
-        if (!currentGroupId) return;
-        const res = await fetch(`/api/jira/sync?groupId=${currentGroupId}`, { method: 'POST', credentials: 'include' });
-        if (res.ok) {
-            alert('Đã đồng bộ Jira thành công!');
-            loadDashboardData();
+        var groupsRes = await fetch('/api/groups', opts);
+        var groups = await groupsRes.json();
+        if (groups.length === 0) {
+            document.getElementById('tasksBody').innerHTML = '<tr><td colspan="3" class="text-center" style="padding: 2rem; color: var(--text-muted);">Chưa có nhóm.</td></tr>';
+            return;
         }
+        currentGroupId = groups[0].id;
+
+        var statsRes = await fetch('/api/reports/progress?groupId=' + currentGroupId, opts);
+        var stats = await statsRes.json();
+        document.getElementById('statTotal').textContent = (stats.done || 0) + '/' + (stats.total || 0);
+        document.getElementById('statProgress').textContent = (stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0) + '%';
+
+        var tasksRes = await fetch('/api/tasks?groupId=' + currentGroupId, opts);
+        var tasks = await tasksRes.json();
+        var tasksBody = document.getElementById('tasksBody');
+        var list = tasks.slice(0, 8);
+        if (list.length === 0) tasksBody.innerHTML = '<tr><td colspan="3" class="text-center" style="padding: 2rem;">Chưa có task.</td></tr>';
+        else tasksBody.innerHTML = list.map(function(t) {
+            var assignee = t.assigneeUserName || (t.assigneeUserId ? t.assigneeUserId.toString().substring(0, 8) + '...' : '—');
+            var statusClass = t.status === 2 ? 'status-done' : (t.status === 1 ? 'status-progress' : 'status-todo');
+            var statusText = t.status === 2 ? 'Done' : (t.status === 1 ? 'In Progress' : 'Todo');
+            return '<tr><td>' + esc(t.title) + '</td><td>' + esc(assignee) + '</td><td><span class="status-badge ' + statusClass + '">' + statusText + '</span></td></tr>';
+        }).join('');
+
+        var totalCommits = 0;
+        try {
+            var cRes = await fetch('/api/reports/commit-stats?groupId=' + currentGroupId, opts);
+            if (cRes.ok) { var d = await cRes.json(); if (d.byUser) totalCommits = d.byUser.reduce(function(s, x) { return s + (x.count || 0); }, 0); }
+        } catch (e) {}
+        document.getElementById('statCommits').textContent = totalCommits;
+        document.getElementById('contributionsBody').innerHTML = '<p>Tổng commits nhóm: <strong>' + totalCommits + '</strong>. Xem chi tiết tại <a href="/Dashboard/Commits" class="link-primary">Commits</a>.</p>';
     }
 
-    async function generateSrs() {
-        if (!currentGroupId) return;
-        const res = await fetch(`/api/reports/srs?groupId=${currentGroupId}`, { method: 'POST', credentials: 'include' });
-        if (res.ok) {
-            const data = await res.json();
-            alert(`Đã tạo SRS thành công: ${data.title}`);
-        }
-    }
-
-    window.onload = loadDashboardData;
+    if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', loadDashboardData); else loadDashboardData();
+})();
 </script>

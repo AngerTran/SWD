@@ -1,49 +1,64 @@
 @{
     Layout = "_DashboardLayout";
-    ViewData["Title"] = "Đồng bộ Jira";
+    ViewData["Title"] = "Đồng bộ dữ liệu";
+    var canSyncJira = ViewBag.CanSyncJira as bool? ?? false;
+    var canSyncGitHub = ViewBag.CanSyncGitHub as bool? ?? true;
 }
 
 <div class="page-header animate__animated animate__fadeIn">
-    <h1 class="page-title">Đồng bộ Jira</h1>
-    <p class="text-muted">Kéo issues từ Jira project vào bảng Tasks. Danh sách nhóm lấy từ bảng <strong>Groups</strong> — chọn nhóm rồi bấm đồng bộ; kết quả ghi vào bảng <strong>Tasks</strong>.</p>
+    <h1 class="page-title">Đồng bộ dữ liệu</h1>
+    <p class="text-muted">Đồng bộ dữ liệu theo vai trò: danh sách nhóm được lọc theo quyền (Admin: tất cả; Lecturer: nhóm được gán; Team Leader: nhóm của mình). Chọn nhóm rồi thực hiện đồng bộ Jira (issues → Tasks) và/hoặc GitHub (commits).</p>
 </div>
 
-<div class="content-card animate__animated animate__fadeInUp" style="max-width: 560px;">
+<div class="content-card animate__animated animate__fadeInUp" style="max-width: 640px;">
     <div class="form-input-group">
-        <label class="form-label">Chọn nhóm (dữ liệu từ bảng Groups)</label>
+        <label class="form-label">Chọn nhóm</label>
         <select id="groupSelect" class="form-control">
             <option value="">-- Đang tải --</option>
         </select>
     </div>
     <div id="groupInfo" class="form-input-group" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 12px;">
-        <label class="form-label">Thông tin nhóm (để đồng bộ)</label>
+        <label class="form-label">Thông tin nhóm</label>
         <table style="width: 100%; font-size: 0.875rem;">
             <tr><td class="text-muted" style="padding: 0.25rem 0;">Mã / Tên</td><td id="groupCodeName"></td></tr>
             <tr><td class="text-muted" style="padding: 0.25rem 0;">Jira Project Key</td><td id="jiraKeyDisplay" style="font-family: monospace;"></td></tr>
             <tr><td class="text-muted" style="padding: 0.25rem 0;">GitHub Repo</td><td id="githubRepoDisplay" style="font-family: monospace;"></td></tr>
         </table>
-        <p class="text-muted" style="margin-top: 0.75rem; font-size: 0.8125rem;">Cấu hình Jira trong appsettings.json (BaseUrl, Email, ApiToken). Project key dùng từ nhóm trên hoặc mặc định.</p>
     </div>
-    <div style="display: flex; gap: 0.75rem; margin-top: 1.25rem;">
-        <button type="button" id="btnSync" class="btn btn-submit" onclick="doSync()">
-            <i class="fas fa-sync" style="margin-right: 0.5rem;"></i> Đồng bộ ngay
-        </button>
-    </div>
-</div>
 
-<div id="resultCard" class="content-card animate__animated animate__fadeInUp" style="margin-top: 1.5rem; display: none;">
-    <h2 class="card-title" style="margin-bottom: 0.75rem;">Kết quả đồng bộ</h2>
-    <div id="resultBody"></div>
-</div>
+    @if (canSyncJira)
+    {
+        <div class="sync-section" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.08);">
+            <h2 class="card-title" style="font-size: 1rem; margin-bottom: 0.75rem;">Đồng bộ Jira (issues → Tasks)</h2>
+            <p class="text-muted" style="font-size: 0.875rem; margin-bottom: 0.75rem;">Kéo issues từ Jira project vào bảng Tasks. Cấu hình Jira trong appsettings.json.</p>
+            <button type="button" id="btnSyncJira" class="btn btn-submit" onclick="doSyncJira()">
+                <i class="fas fa-sync" style="margin-right: 0.5rem;"></i> Đồng bộ Jira
+            </button>
+            <div id="resultJira" class="sync-result" style="margin-top: 0.75rem; display: none;"></div>
+            <div id="errorJira" class="sync-error text-danger" style="margin-top: 0.5rem; display: none; font-size: 0.875rem;"></div>
+        </div>
+    }
 
-<div id="errorCard" class="content-card" style="margin-top: 1rem; border-color: rgba(239,68,68,0.5); display: none;">
-    <p id="errorText" class="text-muted" style="margin: 0; color: #f87171;"></p>
+    @if (canSyncGitHub)
+    {
+        <div class="sync-section" style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.08);">
+            <h2 class="card-title" style="font-size: 1rem; margin-bottom: 0.75rem;">Đồng bộ GitHub (commits)</h2>
+            <p class="text-muted" style="font-size: 0.875rem; margin-bottom: 0.75rem;">Lấy commits từ GitHub repo của nhóm, map author với User trong hệ thống.</p>
+            <button type="button" id="btnSyncGitHub" class="btn btn-submit" onclick="doSyncGitHub()">
+                <i class="fab fa-github" style="margin-right: 0.5rem;"></i> Đồng bộ GitHub
+            </button>
+            <div id="resultGitHub" class="sync-result" style="margin-top: 0.75rem; display: none;"></div>
+            <div id="errorGitHub" class="sync-error text-danger" style="margin-top: 0.5rem; display: none; font-size: 0.875rem;"></div>
+        </div>
+    }
 </div>
 
 <script>
 (function() {
     const opts = { credentials: 'include' };
     let groups = [];
+    const canSyncJira = @(canSyncJira ? "true" : "false");
+    const canSyncGitHub = @(canSyncGitHub ? "true" : "true");
 
     async function loadGroups() {
         const sel = document.getElementById('groupSelect');
@@ -72,44 +87,77 @@
         return d.innerHTML;
     }
 
+    function getGroupId() {
+        const id = document.getElementById('groupSelect').value;
+        if (!id) { alert('Vui lòng chọn nhóm.'); return null; }
+        return id;
+    }
+
     function showGroupInfo(g) {
         document.getElementById('groupInfo').style.display = 'block';
         document.getElementById('groupCodeName').textContent = (g.code || '') + ' - ' + (g.name || '');
-        document.getElementById('jiraKeyDisplay').textContent = g.jiraProjectKey || '(chưa cấu hình — dùng mặc định)';
+        document.getElementById('jiraKeyDisplay').textContent = g.jiraProjectKey || '(chưa cấu hình)';
         document.getElementById('githubRepoDisplay').textContent = g.githubRepo || '(chưa cấu hình)';
     }
 
-    async function doSync() {
-        const groupId = document.getElementById('groupSelect').value;
-        if (!groupId) {
-            alert('Vui lòng chọn nhóm.');
-            return;
-        }
-        const btn = document.getElementById('btnSync');
+    async function doSyncJira() {
+        const groupId = getGroupId();
+        if (!groupId) return;
+        const btn = document.getElementById('btnSyncJira');
+        if (!btn) return;
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 0.5rem;"></i> Đang đồng bộ...';
-        document.getElementById('resultCard').style.display = 'none';
-        document.getElementById('errorCard').style.display = 'none';
+        document.getElementById('resultJira').style.display = 'none';
+        document.getElementById('errorJira').style.display = 'none';
+        document.getElementById('errorJira').textContent = '';
 
         try {
             const res = await fetch('/api/jira/sync?groupId=' + groupId, { method: 'POST', credentials: 'include' });
             const data = await res.json().catch(() => ({}));
             if (res.ok) {
-                document.getElementById('resultBody').innerHTML =
-                    '<p><strong>Thêm mới:</strong> ' + (data.added ?? 0) + ' task(s)</p>' +
-                    '<p><strong>Cập nhật:</strong> ' + (data.updated ?? 0) + ' task(s)</p>' +
-                    '<p class="text-muted" style="margin-top: 0.5rem;">' + escapeHtml(data.message || 'Đồng bộ xong.') + '</p>';
-                document.getElementById('resultCard').style.display = 'block';
+                document.getElementById('resultJira').innerHTML =
+                    '<p><strong>Thêm mới:</strong> ' + (data.added ?? 0) + ' task(s) — <strong>Cập nhật:</strong> ' + (data.updated ?? 0) + ' task(s). ' + escapeHtml(data.message || '');
+                document.getElementById('resultJira').style.display = 'block';
             } else {
-                document.getElementById('errorText').textContent = data.title || data.message || data.detail || 'Đồng bộ thất bại. Kiểm tra cấu hình Jira (appsettings.json) và Project Key của nhóm.';
-                document.getElementById('errorCard').style.display = 'block';
+                document.getElementById('errorJira').textContent = data.message || data.title || data.detail || 'Đồng bộ Jira thất bại.';
+                document.getElementById('errorJira').style.display = 'block';
             }
         } catch (err) {
-            document.getElementById('errorText').textContent = 'Lỗi kết nối: ' + err.message;
-            document.getElementById('errorCard').style.display = 'block';
+            document.getElementById('errorJira').textContent = 'Lỗi kết nối: ' + err.message;
+            document.getElementById('errorJira').style.display = 'block';
         }
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-sync" style="margin-right: 0.5rem;"></i> Đồng bộ ngay';
+        btn.innerHTML = '<i class="fas fa-sync" style="margin-right: 0.5rem;"></i> Đồng bộ Jira';
+    }
+
+    async function doSyncGitHub() {
+        const groupId = getGroupId();
+        if (!groupId) return;
+        const btn = document.getElementById('btnSyncGitHub');
+        if (!btn) return;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right: 0.5rem;"></i> Đang đồng bộ...';
+        document.getElementById('resultGitHub').style.display = 'none';
+        document.getElementById('errorGitHub').style.display = 'none';
+        document.getElementById('errorGitHub').textContent = '';
+
+        try {
+            const res = await fetch('/api/github/sync-commits?groupId=' + groupId + '&maxPages=10', { method: 'POST', credentials: 'include' });
+            const data = await res.json().catch(() => ({}));
+            if (res.ok) {
+                document.getElementById('resultGitHub').innerHTML =
+                    '<p><strong>Thêm mới:</strong> ' + (data.added ?? 0) + ' commit(s) — <strong>Bỏ qua (trùng):</strong> ' + (data.skipped ?? 0) + '. ' + escapeHtml(data.message || '');
+                document.getElementById('resultGitHub').style.display = 'block';
+            } else {
+                document.getElementById('errorGitHub').textContent = data.message || data.title || data.detail || 'Đồng bộ GitHub thất bại.';
+                document.getElementById('errorGitHub').style.display = 'block';
+            }
+        } catch (err) {
+            document.getElementById('errorGitHub').textContent = 'Lỗi kết nối: ' + err.message;
+            document.getElementById('errorGitHub').style.display = 'block';
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fab fa-github" style="margin-right: 0.5rem;"></i> Đồng bộ GitHub';
     }
 
     window.onload = loadGroups;

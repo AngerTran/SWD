@@ -33,8 +33,17 @@ public class JiraController : ControllerBase
 
         var uid = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (uid is null) return Unauthorized();
+        var userId = Guid.Parse(uid);
 
-        var (added, updated) = await _jira.SyncProjectIssuesToTasksAsync(groupId, Guid.Parse(uid), ct);
+        // TeamLeader chỉ được sync nhóm mà mình là thành viên (GroupId của user = groupId)
+        if (User.IsInRole(Roles.TeamLeader) && !User.IsInRole(Roles.Admin))
+        {
+            var userInGroup = await _db.Users.AnyAsync(u => u.Id == userId && u.GroupId == groupId, ct);
+            if (!userInGroup)
+                return StatusCode(403, new { title = "Forbidden", message = "Bạn chỉ được đồng bộ Jira cho nhóm của mình." });
+        }
+
+        var (added, updated) = await _jira.SyncProjectIssuesToTasksAsync(groupId, userId, ct);
         return Ok(new { groupId, added, updated, message = "Jira đồng bộ xong." });
     }
 }

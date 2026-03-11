@@ -10,90 +10,82 @@
 
 <div class="stats-grid">
     <div class="stat-card animate__animated animate__zoomIn">
-        <div class="stat-icon bg-blue-500/10 text-blue-500"><i class="fas fa-file-alt"></i></div>
-        <div class="stat-value">45</div>
+        <div class="stat-icon stat-icon-blue"><i class="fas fa-file-alt"></i></div>
+        <div id="statRequirements" class="stat-value">0</div>
         <div class="stat-label">Tổng Requirements</div>
     </div>
     <div class="stat-card animate__animated animate__zoomIn" style="animation-delay: 0.1s">
-        <div class="stat-icon bg-green-500/10 text-green-500"><i class="fas fa-tasks"></i></div>
-        <div class="stat-value">62%</div>
+        <div class="stat-icon stat-icon-green"><i class="fas fa-tasks"></i></div>
+        <div id="statPercent" class="stat-value">0%</div>
         <div class="stat-label">Tasks hoàn thành</div>
     </div>
     <div class="stat-card animate__animated animate__zoomIn" style="animation-delay: 0.2s">
-        <div class="stat-icon bg-purple-500/10 text-purple-500"><i class="fas fa-code-branch"></i></div>
-        <div class="stat-value">1,240</div>
-        <div class="stat-label">Tổng số Commits</div>
+        <div class="stat-icon stat-icon-purple"><i class="fas fa-code-branch"></i></div>
+        <div id="statCommits" class="stat-value">0</div>
+        <div class="stat-label">Tổng Commits (các nhóm)</div>
     </div>
     <div class="stat-card animate__animated animate__zoomIn" style="animation-delay: 0.3s">
-        <div class="stat-icon bg-red-500/10 text-red-500"><i class="fas fa-exclamation-triangle"></i></div>
-        <div class="stat-value">3</div>
-        <div class="stat-label">Nhóm cần chú ý</div>
+        <div class="stat-icon stat-icon-amber"><i class="fas fa-users"></i></div>
+        <div id="statGroups" class="stat-value">0</div>
+        <div class="stat-label">Số nhóm được gán</div>
     </div>
 </div>
 
 <div class="dashboard-grid">
-    <div class="content-card">
+    <div class="content-card animate__animated animate__fadeInUp">
         <div class="card-header">
             <h2 class="card-title">Tiến độ theo nhóm</h2>
-            <button class="btn btn-sm btn-outline-primary" onclick="exportReports()">Xuất báo cáo</button>
+            <a href="/Dashboard/Reports" class="link-primary">Xem báo cáo</a>
         </div>
         <div id="groupsProgressBody" class="flex flex-column gap-4">
-            <p class="text-muted text-sm">Đang tải tiến độ các nhóm...</p>
+            <p class="text-muted" style="font-size: 0.875rem;">Đang tải tiến độ các nhóm...</p>
         </div>
     </div>
-
-    <div class="content-card">
+    <div class="content-card animate__animated animate__fadeInUp">
         <div class="card-header">
             <h2 class="card-title">Thống kê Commit theo nhóm</h2>
+            <a href="/Dashboard/Commits" class="link-primary">Chi tiết</a>
         </div>
-        <div id="commitsStatsBody" class="text-center py-4">
-            <i class="fas fa-chart-line text-4xl text-muted opacity-20 mb-3"></i>
-            <p class="text-sm text-muted">Đang phân tích dữ liệu GitHub...</p>
+        <div id="commitsStatsBody" style="padding: 1rem 0; font-size: 0.875rem; color: var(--text-muted);">
+            Đang tải...
         </div>
     </div>
 </div>
 
 <script>
+(function() {
+    const opts = { credentials: 'include' };
     async function loadLecturerDashboard() {
-        const res = await fetch('/api/groups', { credentials: 'include' });
+        const res = await fetch('/api/groups', opts);
         const groups = await res.json();
-        
+        document.getElementById('statGroups').textContent = groups.length;
+
+        var totalTasks = 0, doneTasks = 0, totalCommits = 0;
         const progressBody = document.getElementById('groupsProgressBody');
         progressBody.innerHTML = '';
 
         for (const g of groups) {
-            const sRes = await fetch(`/api/reports/progress?groupId=${g.id}`, { credentials: 'include' });
+            const sRes = await fetch('/api/reports/progress?groupId=' + g.id, opts);
             const stats = await sRes.json();
+            totalTasks += stats.total || 0;
+            doneTasks += stats.done || 0;
             const percent = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
-            
-            progressBody.innerHTML += `
-                <div class="mb-4">
-                    <div class="flex justify-between mb-2">
-                        <span class="text-sm font-medium">${g.code} - ${g.name}</span>
-                        <span class="text-sm font-medium">${percent}%</span>
-                    </div>
-                    <div class="w-full bg-slate-800 rounded-full h-2">
-                        <div class="bg-blue-500 h-2 rounded-full transition-all duration-1000" style="width: ${percent}%"></div>
-                    </div>
-                    <div class="text-[10px] text-slate-500 mt-1">Done: ${stats.done} / Total: ${stats.total}</div>
-                </div>
-            `;
+            progressBody.innerHTML += '<div class="mb-4"><div class="flex justify-between mb-2"><span style="font-size: 0.875rem; font-weight: 500;">' + (g.code + ' - ' + g.name) + '</span><span style="font-size: 0.875rem;">' + percent + '%</span></div><div class="progress-bar-wrap"><div class="progress-bar-fill" style="width: ' + percent + '%"></div></div><div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">Done: ' + stats.done + ' / ' + stats.total + '</div></div>';
+
+            try {
+                const cRes = await fetch('/api/reports/commit-stats?groupId=' + g.id, opts);
+                if (cRes.ok) { const d = await cRes.json(); if (d.byUser) totalCommits += d.byUser.reduce(function(s, x) { return s + (x.count || 0); }, 0); }
+            } catch (e) {}
         }
 
-        document.getElementById('commitsStatsBody').innerHTML = `
-            <div class="text-left text-sm text-slate-400">
-                <p>Phân tích commit patterns:</p>
-                <ul class="list-disc ml-5 mt-2">
-                    <li>Nhóm G01: 45 commits</li>
-                    <li>Nhóm G02: 12 commits</li>
-                </ul>
-            </div>
-        `;
-    }
+        document.getElementById('statRequirements').textContent = totalTasks;
+        document.getElementById('statPercent').textContent = totalTasks > 0 ? Math.round((doneTasks / totalTasks) * 100) + '%' : '0%';
+        document.getElementById('statCommits').textContent = totalCommits;
 
-    function exportReports() {
-        alert('Đang tạo báo cáo tổng hợp cho tất cả các nhóm...');
+        var commitHtml = '<p style="margin-bottom: 0.5rem;">Tổng commits: <strong>' + totalCommits + '</strong></p>';
+        if (groups.length === 0) commitHtml += '<p class="text-muted">Chưa có nhóm được gán.</p>';
+        document.getElementById('commitsStatsBody').innerHTML = commitHtml;
     }
-
-    window.onload = loadLecturerDashboard;
+    if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded', loadLecturerDashboard); else loadLecturerDashboard();
+})();
 </script>

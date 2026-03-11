@@ -1,0 +1,107 @@
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Báo cáo";
+    var isAdmin = ViewBag.IsAdmin as bool? ?? false;
+}
+
+<div class="page-header animate__animated animate__fadeIn">
+    <div class="page-header-flex">
+        <div>
+            <h1 class="page-title">Báo cáo</h1>
+            <p class="text-muted">Danh sách báo cáo SRS và tiến độ theo nhóm. Giảng viên xem nhóm được gán; Admin xem tất cả.</p>
+        </div>
+    </div>
+</div>
+
+<div class="content-card animate__animated animate__fadeInUp">
+    <div class="form-input-group" style="max-width: 320px; margin-bottom: 1.5rem;">
+        <label class="form-label">Lọc theo nhóm</label>
+        <select id="groupFilter" class="form-control">
+            <option value="">Tất cả nhóm</option>
+        </select>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Loại</th>
+                    <th>Tiêu đề</th>
+                    <th>Nhóm</th>
+                    <th>Ngày tạo</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody id="reportsTableBody">
+                <tr><td colspan="5" class="text-center" style="padding: 2.5rem;">Đang tải...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+(function() {
+    const opts = { credentials: 'include' };
+    let groups = [];
+    let reports = [];
+
+    async function loadGroups() {
+        try {
+            const res = await fetch('/api/groups', opts);
+            groups = await res.json();
+            const sel = document.getElementById('groupFilter');
+            sel.innerHTML = '<option value="">Tất cả nhóm</option>' +
+                groups.map(g => `<option value="${g.id}">${escapeHtml(g.code)} - ${escapeHtml(g.name)}</option>`).join('');
+            sel.onchange = loadReports;
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function escapeHtml(s) {
+        const d = document.createElement('div');
+        d.textContent = s || '';
+        return d.innerHTML;
+    }
+
+    function getGroupName(id) {
+        const g = groups.find(x => x.id === id);
+        return g ? (g.code + ' - ' + g.name) : (id ? '(Nhóm)' : '—');
+    }
+
+    async function loadReports() {
+        const groupId = document.getElementById('groupFilter').value;
+        const url = groupId ? '/api/reports/list?groupId=' + groupId : '/api/reports/list';
+        const tbody = document.getElementById('reportsTableBody');
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center" style="padding: 2rem;">Đang tải...</td></tr>';
+        try {
+            const res = await fetch(url, opts);
+            reports = await res.json();
+            if (reports.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center" style="padding: 2rem; color: var(--text-muted);">Chưa có báo cáo nào.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = reports.map(r => {
+                const isSrs = r.type === 0 || r.type === 'Srs';
+                const typeLabel = isSrs ? 'SRS' : (r.type === 1 || r.type === 'Progress' ? 'Tiến độ' : '');
+                const typeClass = isSrs ? 'badge-srs' : 'badge-muted';
+                const date = r.createdAt ? new Date(r.createdAt).toLocaleString('vi-VN') : '';
+                const download = isSrs ? `<a href="/api/reports/${r.id}?download=true" class="action-btn" title="Tải xuống"><i class="fas fa-download"></i></a>` : '';
+                return `<tr>
+                    <td><span class="badge ${typeClass}">${escapeHtml(typeLabel)}</span></td>
+                    <td>${escapeHtml(r.title || '')}</td>
+                    <td>${escapeHtml(getGroupName(r.groupId))}</td>
+                    <td>${escapeHtml(date)}</td>
+                    <td class="action-cell">${download}</td>
+                </tr>`;
+            }).join('');
+        } catch (err) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center" style="padding: 2rem; color: #f87171;">Lỗi tải báo cáo.</td></tr>';
+        }
+    }
+
+    window.onload = async function() {
+        await loadGroups();
+        await loadReports();
+    };
+})();
+</script>
